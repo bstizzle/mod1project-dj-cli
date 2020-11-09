@@ -4,10 +4,9 @@ require_relative '../lib/app/models/cli.rb'
 puts "Welcome to Spotify Lite"
 sleep(2)
 puts "Do you have an account?"
+new_cli = CLI.new
 answer = gets.chomp
-# IN PROGRESS
-username = gets.chomp
-# HELPER METHOD TO CHECK IF USERNAME EXISTS
+new_cli.check_answer(answer)
 
 
 
