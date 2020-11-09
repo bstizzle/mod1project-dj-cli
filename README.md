@@ -1,65 +1,48 @@
 # DJ-CLI app notes/pitch
-Description: An app where users can create, edit, share, search, and listen to playlists of songs either created generatively or with specific additions
+Description: An app where users can create, edit, share, search, and listen to playlists of tracks either created generatively or with specific additions
 
-Potentially utilize Billboard Charts API and/or Spotify API (spotify API might be able to do all this already, not sure, so maybe don't use it)
-
-(if it is too robust, could deliberately not use most functions of the Spotify API and only use it for its search engine?)
-or other music listing/playing API
+Potentially utilize Billboard Charts API and/or Spotify API
 
 # Models, Attributes, and Associations
-Listener: username
-Dj: username
-Playlist: dj_id
-Song: name, artist_id
-Artist: name
-
-Dj has_many Playlists
-Dj has_many Listeners and Songs through Playlists
-Dj has_many Artists through Songs
+User: username
+Playlist: user_id
+Track: (all the built in info from Spotify)
+Review: user_id, playlist_id
 
 Playlist belongs_to Dj
-Playlist has_many Listeners
-Playlist has_many Songs
-Playlist has_many Artists through Songs
+Playlist has_many Users
+Playlist has_many Reviews
+Playlist has_many Tracks
+Playlist has_many Artists through Tracks
 
-Song belongs_to Artist
-Song has_many Playlists
-Song has_many Djs and Listeners through Playlists
+Track belongs_to Artist
+Track has_many Playlists
+Track has_many Djs and Users through Playlists
 
-Artist has_many Songs
-Artist has_many Playlists through Songs
-Artist has many Djs and Listeners through Playlists
+User has_many Playlists
+User has_many Reviews
+User has_many Djs and Tracks through Playlists
+User has_many Artists through Tracks
 
-Listener has_many Playlists
-Listener has_many Djs and Songs through Playlists
-Listener has_many Artists through Songs
+Review belongs_to User
+Review belongs_to Playlist
 
-playlistSong join table needed? playlist_id, song_id
-playlistListener join table needed? playlist_id, listener_id
-
-Djs are also Listeners
-Listeners are not necessarily Djs
-TBD: Listeners can either become Djs by creating their first playlist, or the Djs could be treated as people actually hired by the app company
-	If the latter, normal Listeners would then be unable to create their own playlists and the app would be more like a music radio app
+playlistTrack join table needed? playlist_id, track_id
+playlistUser join table needed? playlist_id, user_id
 
 # Relationship Chart
-Listener => Playlist <= Dj
-				^
-				|
-			  Song
-			  	^
-				|
-			 Artist
+User => playlistUser <= Playlist => playlistTrack <= Track
+User => Playlist <= User
+User => Review <= Playlist
 			 
 # User Stories
-As a listener, I can see all the Djs and their playlists
-As a listener, I can select and save playlists to my library listen to
-As a listener, I can remove playlists from my library
-As a listener, I can leave/edit/delete reviews on playlists and Djs
-??As a listener, I can follow Djs I like and not just their playlists (requieres an additional class?)
+As a User, I can see all created playlists
+As a User, I can select and save playlists to my library listen to
+As a User, I can remove playlists from my library
 
-As a Dj, I can create and populate playlists, and do all listener actions
-As a Dj, I can directly input a song into one of my playlists
-As a Dj, I can generate some songs for a playlist by various search methods: genre, artist, popularity, etc.
-As A Dj, I can see how many listeners are listening to which of my playlists
-	If I'm a popular Dj, maybe also be able to search songs based on what my Listeners are listening to?
+As a User, I can leave/edit/delete reviews on playlists
+
+As a User, I can create and populate playlists
+As a User, I can directly input a song into one of my playlists
+As a User, I can generate some Tracks for a playlist by various search methods: genre, artist, popularity, etc.
+As A User, I can see how many Users are listening to which of my playlists
