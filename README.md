@@ -1,7 +1,8 @@
 # DJ-CLI app notes/pitch
 Description: An app where users can create, edit, share, search, and listen to playlists of songs either created generatively or with specific additions
 
-potentially utilize Billboard Charts API and/or Spotify API (spotify API might be able to do all this already, not sure, so maybe don't use it)
+Potentially utilize Billboard Charts API and/or Spotify API (spotify API might be able to do all this already, not sure, so maybe don't use it)
+
 (if it is too robust, could deliberately not use most functions of the Spotify API and only use it for its search engine?)
 or other music listing/playing API
 
@@ -46,16 +47,16 @@ Listener => Playlist <= Dj
 				^
 				|
 			  Song
-				^
+			  	^
 				|
-			  Artist
-
+			 Artist
+			 
 # User Stories
 As a listener, I can see all the Djs and their playlists
 As a listener, I can select and save playlists to my library listen to
-AS a listener, I can remove playlists from my library
+As a listener, I can remove playlists from my library
 As a listener, I can leave/edit/delete reviews on playlists and Djs
-# As a listener, I can follow Djs I like and not just their playlists (requieres an additional class?)
+??As a listener, I can follow Djs I like and not just their playlists (requieres an additional class?)
 
 As a Dj, I can create and populate playlists, and do all listener actions
 As a Dj, I can directly input a song into one of my playlists
