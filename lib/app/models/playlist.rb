@@ -1,14 +1,16 @@
 class Playlist < ActiveRecord::Base
-    belongs_to :user #creator
-    has_many :users #listeners
-    has_many :tracks
+    belongs_to :user #self.user (SINGULAR) returns the creator
+    has_many :playlist_users
+    has_many :users, through: :playlist_users #self.users (PLURAL) returns listeners
 
-    def tracks #returns array of URLs to tracks in the playlist
-        PlaylistTrack.all.map do |track|
-            if track.playlist_id == self.id
+    def tracks #returns array of tracks in the playlist
+        PlaylistTrack.all.map do |playTrack|
+            if playTrack.playlist_id == self.id
                 #might want to return track objects, and have separate method for getting the links?
                 #song = RSpotify::Track.find(track.track_id).external_urls["spotify"]
-                song = RSpotify::Track.find(track.track_id)
+
+                #currently returning array of track id's
+                song = RSpotify::Track.find(playTrack.track_id).id
             end 
             song
         end
@@ -26,6 +28,10 @@ class Playlist < ActiveRecord::Base
         end.compact 
     end 
 
+    def add_track(track) #add a track to the playlist
+        PlaylistTrack.create(playlist_id: self.id, track_id: track.id)
+    end
+
     def self.find_by_name(name) #returns array of playlists that have input string in their name
         self.all.select{ |playlist| playlist.name.downcase.include?(name.downcase) }
     end 
@@ -38,9 +44,10 @@ class Playlist < ActiveRecord::Base
         self.all.select{ |playlist| playlist.genre.downcase.include?(gen.downcase) } 
     end 
 
-    def self.find_by_track(track) #returns array of playlists that include the input track
+    def self.find_by_track(track_id) #returns array of playlists that include the input track
         self.all.select do |playlist|
             playlist.tracks.any?(track)
         end 
-    end 
+    end ###IMPORTANT, HAS TO TAKE TRACK ID AS INPUT, taking whole spotify track objs won't work
+
 end
