@@ -170,23 +170,6 @@ class CLI
         when action_2
             puts selected_playlist.tracks
             # add functionality to add to my playlists
-            binding.pry
-        end
-        action = @@prompt.select("Choose a genre:", choices)
-        Playlist.find_by_genre(choices.key(action))
-        # open playlist? based on action
-    end
-
-    def search_by_name
-        choices = {}
-        counter = 1
-        puts "Please enter a playlist name:"
-        name = gets.chomp
-
-        # collect playlist candidates
-        Playlist.find_by_name(name).select do |playlist|
-            choices[playlist.name] = counter
-            counter += 1
         end
 
         # choose one and output the associated tracks
