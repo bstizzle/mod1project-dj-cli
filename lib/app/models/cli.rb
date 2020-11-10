@@ -171,8 +171,7 @@ class CLI
         case action_2
         when action_2
             puts selected_playlist.track_names
-            # add functionality to add to my playlists
-            
+            # add functionality to add to my playlists            
         end
         action = @@prompt.select("Choose a genre:", playlist_choices)
         Playlist.find_by_genre(playlist_choices.key(action))

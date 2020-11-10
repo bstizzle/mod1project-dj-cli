@@ -24,5 +24,5 @@ class User < ActiveRecord::Base
     def self.current_user(username)
         User.all.find{|user| user.username == username}
     end
-    
+   
 end
