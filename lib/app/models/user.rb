@@ -9,4 +9,8 @@ class User < ActiveRecord::Base
             end 
         end.compact 
     end    
+
+    def add_playlist(playlist) #adds a new playlist to the user's library by creating a new PlaylistUser joiner
+        PlaylistUser.create(playlist.id, self.id)
+    end
 end
