@@ -77,7 +77,7 @@ class CLI
         puts @@artii.asciify("Main Menu")
         choices = { "My Library" => 1, 
                 "Create New Playlist" => 2, 
-                "Search All Playlists" => 3,
+                "Search Playlists" => 3,
                 "Exit" => 4
             }
         action = @@prompt.select("Choose an option:", choices)
@@ -93,6 +93,15 @@ class CLI
             return 
         end
     end
+
+    ## MY LIBRARY FUNCTIONALITY
+
+    def my_library
+    end
+
+    ## CREATE NEW PLAYLIST
+
+    ## PLAYLIST SEARCH FUNCTIONALITY
 
     def search_playlists # main search playlists menu
         system('clear')
@@ -130,7 +139,7 @@ class CLI
         end
     end
 
-    def search_by_genre
+    def search_by_genre # see list of all genres; see list of all playlists in selected genre
 
         # initialize hashes and counters
         first_counter = 1
@@ -159,12 +168,34 @@ class CLI
         selected_playlist = Playlist.all.find{|playlist| playlist.name == selected_playlist_name}
         case action_2
         when action_2
-            puts selected_playlist.tracks # not working rn 
+            puts selected_playlist.tracks
             # add functionality to add to my playlists
         end
-        action = @@prompt.select("Choose a genre:", choices)
-        Playlist.find_by_genre(choices.key(action))
-        # open playlist? based on action
+
+        # choose one and output the associated tracks
+        action = @@prompt.select("Choose a playlist:", choices)
+        playlist = Playlist.find_by_name(choices.key(action)).first
+        puts playlist.tracks
+
+        # option to add to my playlists or go to playlists menu
+        playlist_options
+    end
+
+    def playlist_options
+        choices = {"Yes" => 1, "No" => 2}
+        action = @@prompt.select("Add this playlist to your playlists?", choices)
+        case action
+        when 1
+            # add to my playlists
+            puts "Successfully added to your playlists"
+            sleep(2)
+            self.search_playlists
+        when 2
+            self.search_playlists
+        end
+    end
+
+    def add_to_my_playlists
     end
 
 end
