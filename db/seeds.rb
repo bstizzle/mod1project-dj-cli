@@ -25,6 +25,8 @@ glass = RSpotify::Track.search('Glass Island', limit: 1, market: 'US').first
 
 PlaylistTrack.create(playlist_id: p1.id, track_id: superstition.id)
 PlaylistTrack.create(playlist_id: p1.id, track_id: idiot.id)
+PlaylistTrack.create(playlist_id: p5.id, track_id: glass.id)
+PlaylistTrack.create(playlist_id: p2.id, track_id: glass.id)
 
 PlaylistUser.create(playlist_id: p1.id, user_id: ben.id)
 PlaylistUser.create(playlist_id: p1.id, user_id: brendan.id)

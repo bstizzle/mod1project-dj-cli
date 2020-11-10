@@ -21,8 +21,16 @@ class User < ActiveRecord::Base
         end
     end
 
+    def has_playlist?(playlist) #check if your library contains a certain playlist
+        self.library.any?(playlist)
+    end
+
+    def delete_playlist(playlist) #delete a playlist you created
+        Playlist.destroy(playlist.id)
+    end 
+
     def self.current_user(username)
         User.all.find{|user| user.username == username}
     end
-   
+    
 end
