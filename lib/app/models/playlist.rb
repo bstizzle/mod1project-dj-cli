@@ -12,6 +12,12 @@ class Playlist < ActiveRecord::Base
         end
     end
 
+    def track_names
+        self.tracks.map do |track|
+            "#{RSpotify::Track.find(track).name} by: #{RSpotify::Track.find(track).artists.first.name}" 
+        end 
+    end
+
     def listen_to_tracks #prints urls to spotify tracks
         self.tracks.map{ |track| RSpotify::Track.find(track).external_urls }
     end 
