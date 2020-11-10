@@ -6,15 +6,15 @@ class Playlist < ActiveRecord::Base
     def tracks #returns array of tracks in the playlist
         PlaylistTrack.all.map do |playTrack|
             if playTrack.playlist_id == self.id
-                #might want to return track objects, and have separate method for getting the links?
-                #song = RSpotify::Track.find(track.track_id).external_urls["spotify"]
-
-                #currently returning array of track id's
                 song = RSpotify::Track.find(playTrack.track_id).id
             end 
             song
         end
     end
+
+    def listen_to_tracks #prints urls to spotify tracks
+        self.tracks.map{ |track| RSpotify::Track.find(track).external_urls }
+    end 
 
     def creator #returns the user instance that created the playlist
         User.all.detect{|user| user.id == self.user_id}
