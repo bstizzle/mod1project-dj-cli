@@ -17,6 +17,7 @@ p2 = Playlist.create(user_id: mf_cli.id, name: "Pop Disco Funk", genre: "Pop")
 p3 = Playlist.create(user_id: mf_cli.id, name: "Homecoming 2020", genre: "EDM")
 p4 = Playlist.create(user_id: ben.id, name: "Morning Workout", genre: "Heavy Metal")
 p5 = Playlist.create(user_id: brendan.id, name: "Just Brokeup with my GF", genre: "Emo")
+p6 = Playlist.create(user_id: ben.id, name: "Bebop", genre: "Jazz")
 
 superstition = RSpotify::Track.search('Superstition', limit: 1, market: 'US').first
 idiot = RSpotify::Track.search('American Idiot', limit: 1, market: 'US').first
