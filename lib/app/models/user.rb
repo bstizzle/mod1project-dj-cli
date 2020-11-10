@@ -19,5 +19,10 @@ class User < ActiveRecord::Base
                 PlaylistUser.destroy(playUser.id)
             end 
         end
-    end 
+    end
+
+    def self.current_user(username)
+        User.all.find{|user| user.username == username}
+    end
+   
 end

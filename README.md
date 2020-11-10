@@ -66,3 +66,8 @@ As a User, I can leave/edit/delete reviews on Playlists
 As a User, I can generate some Tracks for a Playlist by various search methods: genre, artist, popularity, etc.
 
 As A User, I can see how many Users are listening to which of my Playlists
+
+## KNOWN IMPROVEMENTS NEEDED
+
+More robust authentication flow (counter if you enter wrong username or pw)
+

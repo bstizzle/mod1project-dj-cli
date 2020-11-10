@@ -3,10 +3,11 @@ require "pry"
 require 'rest-client'  
 require 'json' 
 
-class CLI
+class CLI 
 
     @@prompt = TTY::Prompt.new
     @@artii = Artii::Base.new :font => 'slant'
+    @@current_user = ''
 
     def welcome # launches auth flow and prints welcome graphic
         system('clear')
@@ -42,7 +43,7 @@ class CLI
         else
             puts "Perfect. Please create a password:"
             password = gets.chomp
-            User.create(username: username, password: password)
+            @@current_user = User.create(username: username, password: password)
             sleep(2)
             puts "You're all set. We are excited to have you!"
             self.launch_dashboard
@@ -64,11 +65,12 @@ class CLI
     def authenticate_password(username, password) # authenticate reutrning users' passwords
         if User.all.any? { |user| user.username == username && user.password = password }
             puts "Welcome back!"
+            @@current_user = User.current_user(username)
             self.launch_dashboard
         else
             puts "We don't recognize that password. Please re-enter your password:"
             new_password = gets.chomp
-            self.authenticate_username(username, new_password)
+            self.authenticate_password(username, new_password)
         end
     end
 
@@ -168,8 +170,24 @@ class CLI
         selected_playlist = Playlist.all.find{|playlist| playlist.name == selected_playlist_name}
         case action_2
         when action_2
-            puts selected_playlist.tracks
-            # add functionality to add to my playlists
+            puts selected_playlist.track_names
+            # add functionality to add to my playlists            
+        end
+        action = @@prompt.select("Choose a genre:", playlist_choices)
+        Playlist.find_by_genre(playlist_choices.key(action))
+        # open playlist? based on action
+    end
+
+    def search_by_name
+        choices = {}
+        counter = 1
+        puts "Please enter a playlist name:"
+        name = gets.chomp
+
+        # collect playlist candidates
+        Playlist.find_by_name(name).select do |playlist|
+            choices[playlist.name] = counter
+            counter += 1
         end
 
         # choose one and output the associated tracks
