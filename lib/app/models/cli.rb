@@ -8,15 +8,16 @@ class CLI
     @@prompt = TTY::Prompt.new
     @@artii = Artii::Base.new :font => 'slant'
 
-    def welcome
+    def welcome # launches auth flow and prints welcome graphic
         system('clear')
         puts @@artii.asciify("Welcome to")
         puts @@artii.asciify("Spotify ( Lite )!")
         sleep(1)
+        puts "\n"
         self.display_menu
     end
 
-    def display_menu
+    def display_menu # this displays initial log-in menu
         choices = { "Log in" => 1, "Sign up" => 2}
         action = @@prompt.select("What would you like to do?", choices)
         case action
@@ -31,7 +32,7 @@ class CLI
         end
     end
 
-    def setup_username(username)
+    def setup_username(username) # username setup for new users
         if User.all.any? { |user| user.username == username }
             puts "Oops! That name is already taken."
             sleep(2)
@@ -48,7 +49,7 @@ class CLI
         end
     end
 
-    def authenticate_username(username)
+    def authenticate_username(username) # authenticate reutrning users' usernames
         if User.all.any? { |user| user.username == username }
             puts "Please enter your password:"
             password = gets.chomp
@@ -60,7 +61,7 @@ class CLI
         end
     end
     
-    def authenticate_password(username, password)
+    def authenticate_password(username, password) # authenticate reutrning users' passwords
         if User.all.any? { |user| user.username == username && user.password = password }
             puts "Welcome back!"
             self.launch_dashboard
@@ -71,9 +72,14 @@ class CLI
         end
     end
 
-    def launch_dashboard
+    def launch_dashboard # launch main menu
         system('clear')
-        choices = { "My Library" => 1, "Create New Playlist" => 2, "Search All Playlists" => 3}
+        puts @@artii.asciify("Main Menu")
+        choices = { "My Library" => 1, 
+                "Create New Playlist" => 2, 
+                "Search All Playlists" => 3,
+                "Exit" => 4
+            }
         action = @@prompt.select("Choose an option:", choices)
         case action
         when 1
@@ -82,12 +88,21 @@ class CLI
             puts "Let's create playlist"
         when 3
             self.search_playlists
+        when 4
+            system('clear')
+            return 
         end
     end
 
-    def search_playlists
+    def search_playlists # main search playlists menu
         system('clear')
-        choices = { "Search All" => 1, "Search By Genre" => 2, "Search by Name" => 3}
+        puts @@artii.asciify("Playlists")
+        puts "\n"
+        choices = { "Search All" => 1, 
+                "Search By Genre" => 2, 
+                "Search by Name" => 3,
+                "Main Menu" => 4
+            }
         action = @@prompt.select("Choose an option:", choices)
         case action
         when 1
@@ -96,10 +111,12 @@ class CLI
             self.search_by_genre
         when 3
             self.search_by_name
+        when 4
+            self.launch_dashboard 
         end
     end
     
-    def search_all_playlists
+    def search_all_playlists # allows users to select from all playlists 
         counter = 1
         choices = {}
         Playlist.all.select do |playlist|
@@ -107,20 +124,44 @@ class CLI
             counter += 1
         end
         action = @@prompt.select("Choose a playlist:", choices)
-        # open playlist? based on action
+        case action
+        when action
+            puts "Good picks" # open playlist based on actions
+        end
     end
 
     def search_by_genre
-        counter = 1
-        choices = {}
-        genres = Playlist.all_genres # confirm syntax with Ben
-        genres.all.select do |genre|
-            choices[genre] = counter
-            counter += 1
+
+        # initialize hashes and counters
+        first_counter = 1
+        second_counter = 1
+        genre_choices = {}
+        playlist_choices = {} 
+
+        # select genre flow
+        genres = Playlist.all_genres
+        genres.select do |genre|
+            genre_choices[genre] = first_counter
+            first_counter += 1
         end
-        action = @@prompt.select("Choose a genre:", choices)
-        Playlist.find_by_genre(choices.key(action))
-        # open playlist? based on action
+        action_1 = @@prompt.select("Choose a genre:", genre_choices)
+
+        # based on genre, display playlists
+        playlists  = Playlist.find_by_genre(genre_choices.key(action_1))
+        playlists.select do |playlist|
+            playlist_choices[playlist.name] = second_counter
+            second_counter += 1
+        end
+        action_2 = @@prompt.select("Choose a playlist:", playlist_choices)
+
+        # based on selected playlist, output songs
+        selected_playlist_name = playlist_choices.key(action_2)
+        selected_playlist = Playlist.all.find{|playlist| playlist.name == selected_playlist_name}
+        case action_2
+        when action_2
+            puts selected_playlist.tracks # not working rn 
+            # add functionality to add to my playlists
+        end
     end
 
 end
