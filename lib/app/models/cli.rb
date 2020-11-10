@@ -13,18 +13,11 @@ class CLI
         puts @@artii.asciify("Welcome to")
         puts @@artii.asciify("Spotify ( Lite )!")
         sleep(1)
-<<<<<<< HEAD
         puts "\n"
         self.display_menu
     end
 
     def display_menu # this displays initial log-in menu
-=======
-        self.display_menu
-    end
-
-    def display_menu
->>>>>>> 76fcfe61b09efe11cad4d17fc950dcccaf45efc2
         choices = { "Log in" => 1, "Sign up" => 2}
         action = @@prompt.select("What would you like to do?", choices)
         case action
@@ -81,16 +74,12 @@ class CLI
 
     def launch_dashboard # launch main menu
         system('clear')
-<<<<<<< HEAD
         puts @@artii.asciify("Main Menu")
         choices = { "My Library" => 1, 
                 "Create New Playlist" => 2, 
-                "Search All Playlists" => 3,
+                "Search Playlists" => 3,
                 "Exit" => 4
             }
-=======
-        choices = { "My Library" => 1, "Create New Playlist" => 2, "Search All Playlists" => 3}
->>>>>>> 76fcfe61b09efe11cad4d17fc950dcccaf45efc2
         action = @@prompt.select("Choose an option:", choices)
         case action
         when 1
@@ -99,12 +88,20 @@ class CLI
             puts "Let's create playlist"
         when 3
             self.search_playlists
-<<<<<<< HEAD
         when 4
             system('clear')
             return 
         end
     end
+
+    ## MY LIBRARY FUNCTIONALITY
+
+    def my_library
+    end
+
+    ## CREATE NEW PLAYLIST
+
+    ## PLAYLIST SEARCH FUNCTIONALITY
 
     def search_playlists # main search playlists menu
         system('clear')
@@ -115,14 +112,6 @@ class CLI
                 "Search by Name" => 3,
                 "Main Menu" => 4
             }
-=======
-        end
-    end
-
-    def search_playlists
-        system('clear')
-        choices = { "Search All" => 1, "Search By Genre" => 2, "Search by Name" => 3}
->>>>>>> 76fcfe61b09efe11cad4d17fc950dcccaf45efc2
         action = @@prompt.select("Choose an option:", choices)
         case action
         when 1
@@ -131,19 +120,12 @@ class CLI
             self.search_by_genre
         when 3
             self.search_by_name
-<<<<<<< HEAD
         when 4
             self.launch_dashboard 
         end
     end
     
     def search_all_playlists # allows users to select from all playlists 
-=======
-        end
-    end
-    
-    def search_all_playlists
->>>>>>> 76fcfe61b09efe11cad4d17fc950dcccaf45efc2
         counter = 1
         choices = {}
         Playlist.all.select do |playlist|
@@ -151,14 +133,13 @@ class CLI
             counter += 1
         end
         action = @@prompt.select("Choose a playlist:", choices)
-<<<<<<< HEAD
         case action
         when action
             puts "Good picks" # open playlist based on actions
         end
     end
 
-    def search_by_genre
+    def search_by_genre # see list of all genres; see list of all playlists in selected genre
 
         # initialize hashes and counters
         first_counter = 1
@@ -187,24 +168,51 @@ class CLI
         selected_playlist = Playlist.all.find{|playlist| playlist.name == selected_playlist_name}
         case action_2
         when action_2
-            puts selected_playlist.tracks # not working rn 
+            puts selected_playlist.tracks
             # add functionality to add to my playlists
-=======
-        # open playlist? based on action
-    end
-
-    def search_by_genre
-        counter = 1
-        choices = {}
-        genres = Playlist.all_genres # confirm syntax with Ben
-        genres.all.select do |genre|
-            choices[genre] = counter
-            counter += 1
->>>>>>> 76fcfe61b09efe11cad4d17fc950dcccaf45efc2
+            binding.pry
         end
         action = @@prompt.select("Choose a genre:", choices)
         Playlist.find_by_genre(choices.key(action))
         # open playlist? based on action
+    end
+
+    def search_by_name
+        choices = {}
+        counter = 1
+        puts "Please enter a playlist name:"
+        name = gets.chomp
+
+        # collect playlist candidates
+        Playlist.find_by_name(name).select do |playlist|
+            choices[playlist.name] = counter
+            counter += 1
+        end
+
+        # choose one and output the associated tracks
+        action = @@prompt.select("Choose a playlist:", choices)
+        playlist = Playlist.find_by_name(choices.key(action)).first
+        puts playlist.tracks
+
+        # option to add to my playlists or go to playlists menu
+        playlist_options
+    end
+
+    def playlist_options
+        choices = {"Yes" => 1, "No" => 2}
+        action = @@prompt.select("Add this playlist to your playlists?", choices)
+        case action
+        when 1
+            # add to my playlists
+            puts "Successfully added to your playlists"
+            sleep(2)
+            self.search_playlists
+        when 2
+            self.search_playlists
+        end
+    end
+
+    def add_to_my_playlists
     end
 
 end
