@@ -51,11 +51,11 @@ User => Playlist <= User (users know other users through shared playlists)
 User => Review <= Playlist (same structure as playlistUser, but not all Users will leave reviews for every Playlist they listen to)
 			 
 # User Stories
-!!!As a User, I can search through all created Playlists
+!!!As a User, I can search through all created Playlists ###DONE###
 
-!!!As a User, I can select and save Playlists to my library listen to
+!!!As a User, I can select and save Playlists to my library listen to ###DONE###
 
-As a User, I can remove Playlists from my library
+As a User, I can remove Playlists from my library ###DONE###
 
 As a User, I can leave/edit/delete reviews on Playlists
 

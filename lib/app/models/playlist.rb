@@ -1,3 +1,5 @@
+require 'pry'
+
 class Playlist < ActiveRecord::Base
     belongs_to :user #self.user (SINGULAR) returns the creator
     has_many :playlist_users
@@ -9,7 +11,7 @@ class Playlist < ActiveRecord::Base
                 song = RSpotify::Track.find(playTrack.track_id).id
             end 
             song
-        end
+        end.compact
     end
 
     def track_names
@@ -36,6 +38,14 @@ class Playlist < ActiveRecord::Base
 
     def add_track(track) #add a track to the playlist
         PlaylistTrack.create(playlist_id: self.id, track_id: track.id)
+    end
+
+    def remove_track(track) #remove a track from the playlist
+        PlaylistTrack.all.each do |playTrack|
+            if playTrack.track_id == track.id
+                PlaylistTrack.destroy(playTrack.id)
+            end 
+        end
     end
 
     def self.find_by_name(name) #returns array of playlists that have input string in their name

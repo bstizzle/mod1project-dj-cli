@@ -78,16 +78,16 @@ class CLI
         system('clear')
         puts @@artii.asciify("Main Menu")
         choices = { "My Library" => 1, 
-                "Create New Playlist" => 2, 
+                "My Created Playlists" => 2, 
                 "Search Playlists" => 3,
                 "Exit" => 4
             }
         action = @@prompt.select("Choose an option:", choices)
         case action
         when 1
-            puts "Here are your dope playlists"
+            self.my_library
         when 2
-            puts "Let's create playlist"
+            self.my_creations
         when 3
             self.search_playlists
         when 4
@@ -99,9 +99,77 @@ class CLI
     ## MY LIBRARY FUNCTIONALITY
 
     def my_library
+        # initiate choices based on my library
+        choices = {}
+        counter = 1
+        system('clear')
+        puts @@artii.asciify("My Library")
+        puts "\n"
+        @@current_user.library.each do |playlist|
+            choices[playlist.name] = counter
+            counter += 1
+        end
+        action = @@prompt.select("Choose a playlist:", choices)
+
+        # select a playlist and output tracks
+        playlist = Playlist.find_by_name(choices.key(action)).first
+        system('clear')
+        puts @@artii.asciify("My Library")
+        puts "\n"
+        puts "The tracks in #{playlist.name} include:"
+        puts playlist.track_names
+
+        # subsequent options: play, add, back
+        puts "\n"
+        option_choices = { "Play" => 1, "Remove" => 2, "Main Menu" => 3}
+        option_choice = @@prompt.select("Choose an option:", option_choices)
+        case option_choice
+        when 1
+            puts playlist.listen_to_tracks
+            self.launch_dashboard
+        when 2
+            @@current_user.remove_playlist(playlist)
+            self.launch_dashboard
+        when 3
+            self.launch_dashboard
+        end
     end
 
-    ## CREATE NEW PLAYLIST
+    ## CREATED PLAYLIST FUNCTIONALITY
+
+    def my_creations
+        choices = {}
+        counter = 1
+        system('clear')
+        puts @@artii.asciify("My Created Playlists")
+        puts "\n"
+        action_choices = { "Create New" => 1, "Edit Existing" => 2, "Delete" => 3}
+        option = @@prompt.select("Choose an option:", action_choices)
+        case option
+        when 1
+            # do something
+            puts "Please enter a name for your new playlist:"
+            name = gets.chomp
+            puts "Enter a genre:"
+            genre = gets.chomp
+            Playlist.create(user_id: @@current_user.id, name: name, genre: genre)
+            puts "Created #{name} playlist."
+            sleep(2)
+            self.my_creations
+        when 2
+            @@current_user.playlists.each do |playlist|
+                choices[playlist.name] = counter
+                counter += 1
+            end
+            action = @@prompt.select("Choose a playlist:", choices)
+        when 3
+            @@current_user.playlists.each do |playlist|
+                choices[playlist.name] = counter
+                counter += 1
+            end
+            action = @@prompt.select("Choose a playlist:", choices)
+        end
+    end
 
     ## PLAYLIST SEARCH FUNCTIONALITY
 
@@ -135,10 +203,9 @@ class CLI
             counter += 1
         end
         action = @@prompt.select("Choose a playlist:", choices)
-        case action
-        when action
-            puts "Good picks" # open playlist based on actions
-        end
+        playlist = Playlist.find_by_name(choices.key(action)).first
+        self.playlist_options(playlist)
+        #end
     end
 
     def search_by_genre # see list of all genres; see list of all playlists in selected genre
@@ -168,14 +235,9 @@ class CLI
         # based on selected playlist, output songs
         selected_playlist_name = playlist_choices.key(action_2)
         selected_playlist = Playlist.all.find{|playlist| playlist.name == selected_playlist_name}
-        case action_2
-        when action_2
-            puts selected_playlist.track_names
-            # add functionality to add to my playlists            
-        end
-        action = @@prompt.select("Choose a genre:", playlist_choices)
-        Playlist.find_by_genre(playlist_choices.key(action))
-        # open playlist? based on action
+       
+        # add functionality to add to my playlists            
+        self.playlist_options(selected_playlist)
     end
 
     def search_by_name
@@ -193,19 +255,25 @@ class CLI
         # choose one and output the associated tracks
         action = @@prompt.select("Choose a playlist:", choices)
         playlist = Playlist.find_by_name(choices.key(action)).first
-        puts playlist.tracks
 
         # option to add to my playlists or go to playlists menu
-        playlist_options
+        self.playlist_options(playlist)
     end
 
-    def playlist_options
+    def playlist_options(playlist)
+        self.track_list(playlist)
+        puts "\n"
         choices = {"Yes" => 1, "No" => 2}
         action = @@prompt.select("Add this playlist to your playlists?", choices)
         case action
         when 1
             # add to my playlists
-            puts "Successfully added to your playlists"
+            if @@current_user.has_playlist?(playlist)
+                puts "Already in your library silly!"
+            else
+                @@current_user.add_playlist(playlist)
+                puts "Successfully added to your playlists"
+            end
             sleep(2)
             self.search_playlists
         when 2
@@ -213,7 +281,11 @@ class CLI
         end
     end
 
-    def add_to_my_playlists
+    def track_list(playlist) #formatting for UI niceness
+        system('clear')
+        puts @@artii.asciify("Playlists")
+        puts "\n"
+        puts "The tracks in #{playlist.name} include:"
+        puts playlist.track_names #uses Playlist#track_names
     end
-
 end
