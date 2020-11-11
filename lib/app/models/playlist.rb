@@ -5,6 +5,8 @@ class Playlist < ActiveRecord::Base
     has_many :playlist_users
     has_many :users, through: :playlist_users #self.users (PLURAL) returns listeners
 
+    @@pastel = Pastel.new 
+
     def tracks #returns array of tracks in the playlist
         PlaylistTrack.all.map do |playTrack|
             if playTrack.playlist_id == self.id
@@ -16,7 +18,7 @@ class Playlist < ActiveRecord::Base
 
     def track_names #returns array of strings "Track Name by: Artist Name"
         self.tracks.map do |track|
-            "#{RSpotify::Track.find(track).name} by: #{RSpotify::Track.find(track).artists.first.name}" 
+            "#{@@pastel.blue(RSpotify::Track.find(track).name)} by: #{@@pastel.green(RSpotify::Track.find(track).artists.first.name)}" 
         end 
     end
 

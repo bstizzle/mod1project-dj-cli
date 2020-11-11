@@ -54,7 +54,7 @@ class CLI
         end
     end
 
-    def authenticate_username(username) # authenticate reutrning users' usernames
+    def authenticate_username(username) # authenticate returning users' usernames
         if User.all.any? { |user| user.username == username }
             puts "Please enter your password:"
             password = gets.chomp
@@ -66,7 +66,7 @@ class CLI
         end
     end
     
-    def authenticate_password(username, password) # authenticate reutrning users' passwords
+    def authenticate_password(username, password) # authenticate returning users' passwords
         if User.all.any? { |user| user.username == username && user.password = password }
             puts "Welcome back!"
             @@current_user = User.current_user(username)
@@ -193,7 +193,8 @@ class CLI
                 puts "\n"
                 puts "Enter the song name you wish to add:"
                 song_name = gets.chomp
-                playlist.add_track(spotifind(song_name))
+                chosen_song = spotify_by_trackname(song_name)
+                playlist.add_track(chosen_song)
                 self.my_creations #adds requested track to playlist and goes back to options menu
             when 2 # remove track from playlist
                 system('clear')
@@ -206,7 +207,7 @@ class CLI
                     counter += 1
                 end
                 track_action = @@prompt.select("Choose a track to remove:", track_hash)
-                track = self.spotifind(track_hash.key(track_action))
+                track = spotify_by_trackname(track_hash.key(track_action))
                 playlist.remove_track(track)
                 self.my_creations #removes requested track from playlist and goes back to options menu
             when 3 # go back
@@ -359,7 +360,27 @@ class CLI
         end 
     end
 
-    def spotifind(track_name) #encapsulates RSpotify search method
-        RSpotify::Track.search(track_name, limit: 1, market: 'US').first
+    def spotify_by_trackname(track_name) #encapsulates RSpotify search method for tracks
+        track_options = RSpotify::Track.search(track_name, limit: 10, market: 'US')
+        counter = 1
+        choices = {}
+        track_options.select do |track|
+            choices["#{track.name} by: #{@@pastel.green(track.artists.first.name)}"] = counter
+            counter += 1
+        end
+        action = @@prompt.select("Choose a track:", choices) #choose which song you want from a few search results
+        track = track_options[action-1]
+    end
+
+    def spotify_by_artistname(artist_name) #encapsulates RSpotify search method for artists
+        artist_options = RSpotify::Artist.search('Arctic', limit: 10, market: 'US')
+        counter = 1
+        choices = {}
+        artist_options.select do |artist|
+            choices[artist] = counter
+            counter += 1
+        end
+        action = @@prompt.select("Choose a artist:", choices) #choose which artist you want from a few search results
+        artist = artist_options[action-1]
     end
 end

@@ -13,7 +13,7 @@ gem 'rspotify'
 gem 'rest-client'
 gem 'tty-prompt', '~> 0.22.0'
 gem 'artii', '~> 2.1', '>= 2.1.2'
-gem 'rmagick'
+# gem 'rmagick'
 # gem 'catpix'
 gem "tty-spinner"
 gem 'tty-color'
