@@ -209,7 +209,7 @@ class CLI
                 puts "\n"
                 puts "Enter the song name you wish to add:"
                 song_name = gets.chomp
-                playlist_to_edit.add_track(spotifind(song_name))
+                playlist_to_edit.add_track(spotify_by_trackname(song_name))
                 self.my_creations #adds requested track to playlist and goes back to options menu
             when 2 # remove track from playlist
                 if !(playlist_to_edit.tracks.empty?)
@@ -223,8 +223,7 @@ class CLI
                         track_counter += 1
                     end
                     track_action = @@prompt.select("Choose a track to remove:", track_hash)
-                    track = self.spotifind(track_hash.key(track_action))
-                    playlist_to_edit.remove_track(track)
+                    playlist_to_edit.remove_track(RSpotify::Track.find(playlist_to_edit.tracks[track_action-1]))
                     self.my_creations #removes requested track from playlist and goes back to options menu
                 else
                     puts "\nThere are no tracks in that playlist"
