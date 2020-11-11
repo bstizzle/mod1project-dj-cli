@@ -6,14 +6,13 @@ require 'json'
 class CLI 
 
     @@prompt = TTY::Prompt.new
-    @@artii = Artii::Base.new :font => 'slant'
+    @@artii = Artii::Base.new :font => 'standard'
     @@current_user = ''
 
     def welcome # launches auth flow and prints welcome graphic
         system('clear')
         puts @@artii.asciify("Welcome to")
         puts @@artii.asciify("Spotify ( Lite )!")
-        sleep(1)
         puts "\n"
         self.display_menu
     end
@@ -100,11 +99,11 @@ class CLI
 
     def my_library
         # initiate choices based on my library
-        choices = {}
-        counter = 1
         system('clear')
         puts @@artii.asciify("My Library")
         puts "\n"
+        choices = {}
+        counter = 1
         @@current_user.library.each do |playlist|
             choices[playlist.name] = counter
             counter += 1
@@ -115,9 +114,7 @@ class CLI
         playlist = Playlist.find_by_name(choices.key(action)).first
         system('clear')
         puts @@artii.asciify("My Library")
-        puts "\n"
-        puts "The tracks in #{playlist.name} include:"
-        puts playlist.track_names
+        self.track_list(playlist)
 
         # subsequent options: play, add, back
         puts "\n"
@@ -126,10 +123,16 @@ class CLI
         case option_choice
         when 1
             puts playlist.listen_to_tracks
-            self.launch_dashboard
+            puts "\n"
+            back = { "Back" => 1}
+            go_back = @@prompt.select("Go back to the main menu:", back)
+            case go_back
+            when 1
+                self.launch_dashboard
+            end
         when 2
             @@current_user.remove_playlist(playlist)
-            self.launch_dashboard
+            self.my_library
         when 3
             self.launch_dashboard
         end
@@ -143,7 +146,7 @@ class CLI
         system('clear')
         puts @@artii.asciify("My Created Playlists")
         puts "\n"
-        action_choices = { "Create New" => 1, "Edit Existing" => 2, "Delete" => 3}
+        action_choices = { "Create New" => 1, "Edit Existing" => 2, "Delete" => 3, "Main Menu" => 4}
         option = @@prompt.select("Choose an option:", action_choices)
         case option
         when 1
@@ -162,12 +165,46 @@ class CLI
                 counter += 1
             end
             action = @@prompt.select("Choose a playlist:", choices)
+            playlist = Playlist.find_by_name(choices.key(action)).first
+            system('clear')
+            puts @@artii.asciify("My Created Playlists")
+            puts "\n"
+            self.track_list(playlist)
+            puts "\n"
+            options = { "Add" => 1, "Remove" => 2, "Back" => 3}
+            selection = @@prompt.select("Choose an option:", options)
+            case selection
+            when 1 # add to playlist
+                puts "\n"
+                puts "Enter the song name you wish to add:"
+                song_name = gets.chomp
+                playlist.add_track(spotifind(song_name))
+                self.my_creations
+            when 2 # remove track from playlist
+                system('clear')
+                puts @@artii.asciify("My Created Playlists")
+                puts "Select the track you want to remove:"
+                track_hash = {}
+                track_counter = 1
+                playlist.track_names.map do |track|
+                    track_hash[track.split("by:")[0]] = counter
+                    counter += 1
+                end
+                track_action = @@prompt.select("Choose a track to remove:", track_hash)
+                track = self.spotifind(track_hash.key(track_action))
+                playlist.remove_track(track)
+                self.my_creations
+            when 3 # go back
+                self.my_creations
+            end 
         when 3
             @@current_user.playlists.each do |playlist|
                 choices[playlist.name] = counter
                 counter += 1
             end
             action = @@prompt.select("Choose a playlist:", choices)
+        when 4
+            self.launch_dashboard
         end
     end
 
@@ -261,6 +298,8 @@ class CLI
     end
 
     def playlist_options(playlist)
+        system('clear')
+        puts @@artii.asciify("Playlists")
         self.track_list(playlist)
         puts "\n"
         choices = {"Yes" => 1, "No" => 2}
@@ -281,11 +320,22 @@ class CLI
         end
     end
 
-    def track_list(playlist) #formatting for UI niceness
-        system('clear')
-        puts @@artii.asciify("Playlists")
+    #FORMATING HELPER METHODS
+
+    def track_list(playlist) #encapsulated formatting for UI niceness
         puts "\n"
         puts "The tracks in #{playlist.name} include:"
-        puts playlist.track_names #uses Playlist#track_names
+        puts "\n"
+        counter = 0
+        playlist.tracks.each do |track|
+            puts playlist.track_names[counter] #uses Playlist#track_names
+            puts playlist.listen_to_tracks[counter]
+            puts "\n"
+            counter += 1
+        end 
+    end
+
+    def spotifind(track_name)
+        RSpotify::Track.search(track_name, limit: 1, market: 'US').first
     end
 end
