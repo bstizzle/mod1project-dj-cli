@@ -5,20 +5,21 @@ require 'json'
 
 class CLI 
 
-    @@prompt = TTY::Prompt.new
+    @@prompt = TTY::Prompt.new(active_color: :bright_green)
     @@artii = Artii::Base.new :font => 'standard'
     @@current_user = ''
+    @@pastel = Pastel.new 
 
     def welcome # launches auth flow and prints welcome graphic
         system('clear')
-        puts @@artii.asciify("Welcome to")
-        puts @@artii.asciify("Spotify ( Lite )!")
+        puts @@pastel.green(@@artii.asciify("Welcome to"))
+        puts @@pastel.green(@@artii.asciify("Spotify ( Lite )!"))
         puts "\n"
         self.display_menu
     end
 
     def display_menu # this displays initial log-in menu
-        choices = { "Log in" => 1, "Sign up" => 2}
+        choices = { "Log in" => 1, "Sign up" => 2, "Exit" => 3}
         action = @@prompt.select("What would you like to do?", choices)
         case action
         when 1
@@ -29,8 +30,12 @@ class CLI
             puts "Please enter a new username:"
             username = gets.chomp
             self.setup_username(username)
+        when 3
+            return
         end
     end
+
+    ## Authentication flow
 
     def setup_username(username) # username setup for new users
         if User.all.any? { |user| user.username == username }
@@ -73,13 +78,15 @@ class CLI
         end
     end
 
+    ## Main menu
+
     def launch_dashboard # launch main menu
         system('clear')
-        puts @@artii.asciify("Main Menu")
-        choices = { "My Library" => 1, 
-                "My Created Playlists" => 2, 
-                "Search Playlists" => 3,
-                "Exit" => 4
+        puts @@pastel.green(@@artii.asciify("Main Menu"))
+        choices = { "📚 My Library" => 1, 
+                "🎶 My Created Playlists" => 2, 
+                "🔍 Search Playlists" => 3,
+                "👋 Exit" => 4
             }
         action = @@prompt.select("Choose an option:", choices)
         case action
@@ -95,46 +102,54 @@ class CLI
         end
     end
 
-    ## MY LIBRARY FUNCTIONALITY
+    ## My Library screen
 
     def my_library
         # initiate choices based on my library
         system('clear')
-        puts @@artii.asciify("My Library")
+        puts @@pastel.green(@@artii.asciify("My Library"))
         puts "\n"
-        choices = {}
-        counter = 1
-        @@current_user.library.each do |playlist|
-            choices[playlist.name] = counter
-            counter += 1
-        end
-        action = @@prompt.select("Choose a playlist:", choices)
+        if @@current_user.library.size == 0
+            ## add loading spinner here
+            puts "You don't have any favorite playlists yet!"
+            puts "Try adding some under Search Playlists"
+            sleep(3)
+            self.launch_dashboard
+        else
+            choices = {}
+            counter = 1
+            @@current_user.library.each do |playlist|
+                choices[playlist.name] = counter
+                counter += 1
+            end
+            action = @@prompt.select("Choose a playlist:", choices)
 
-        # select a playlist and output tracks
-        playlist = Playlist.find_by_name(choices.key(action)).first
-        system('clear')
-        puts @@artii.asciify("My Library")
-        self.track_list(playlist)
+            # select a playlist and output tracks
+            playlist = Playlist.find_by_name(choices.key(action)).first
+            system('clear')
+            puts @@pastel.green(@@artii.asciify("My Library"))
+            self.track_list(playlist)
 
-        # subsequent options: play, add, back
-        puts "\n"
-        option_choices = { "Play" => 1, "Remove" => 2, "Main Menu" => 3}
-        option_choice = @@prompt.select("Choose an option:", option_choices)
-        case option_choice
-        when 1
-            puts playlist.listen_to_tracks
+            # subsequent options: play, add, back
             puts "\n"
-            back = { "Back" => 1}
-            go_back = @@prompt.select("Go back to the main menu:", back)
-            case go_back
+            option_choices = { "🎹 Play" => 1, "❌ Remove" => 2, "🏠 Main Menu" => 3}
+            option_choice = @@prompt.select("Choose an option:", option_choices)
+            case option_choice
             when 1
+                puts playlist.listen_to_tracks
+                puts "\n"
+                back = { "Back" => 1}
+                go_back = @@prompt.select("Go back to the main menu:", back)
+                case go_back
+                when 1
+                    self.launch_dashboard
+                end
+            when 2
+                @@current_user.remove_playlist(playlist)
+                self.my_library
+            when 3
                 self.launch_dashboard
             end
-        when 2
-            @@current_user.remove_playlist(playlist)
-            self.my_library
-        when 3
-            self.launch_dashboard
         end
     end
 
@@ -144,9 +159,9 @@ class CLI
         choices = {}
         counter = 1
         system('clear')
-        puts @@artii.asciify("My Created Playlists")
+        puts @@pastel.green(@@artii.asciify("My Created Playlists"))
         puts "\n"
-        action_choices = { "Create New" => 1, "Edit Existing" => 2, "Delete" => 3, "Main Menu" => 4}
+        action_choices = { "🆕 Create New" => 1, "🎛️ Edit Existing" => 2, "❌ Delete" => 3, "🏠 Main Menu" => 4}
         option = @@prompt.select("Choose an option:", action_choices)
         case option
         when 1
@@ -167,11 +182,11 @@ class CLI
             action = @@prompt.select("Choose a playlist:", choices)
             playlist = Playlist.find_by_name(choices.key(action)).first
             system('clear')
-            puts @@artii.asciify("My Created Playlists")
+            puts @@pastel.green(@@artii.asciify("My Created Playlists"))
             puts "\n"
             self.track_list(playlist)
             puts "\n"
-            options = { "Add" => 1, "Remove" => 2, "Back" => 3}
+            options = { "➕ Add" => 1, "❌ Remove" => 2, "🔙 Back" => 3}
             selection = @@prompt.select("Choose an option:", options)
             case selection
             when 1 # add to playlist
@@ -182,7 +197,7 @@ class CLI
                 self.my_creations
             when 2 # remove track from playlist
                 system('clear')
-                puts @@artii.asciify("My Created Playlists")
+                puts @@pastel.green(@@artii.asciify("My Created Playlists"))
                 puts "Select the track you want to remove:"
                 track_hash = {}
                 track_counter = 1
@@ -212,12 +227,12 @@ class CLI
 
     def search_playlists # main search playlists menu
         system('clear')
-        puts @@artii.asciify("Playlists")
+        puts @@pastel.green(@@artii.asciify("Playlists"))
         puts "\n"
-        choices = { "Search All" => 1, 
-                "Search By Genre" => 2, 
-                "Search by Name" => 3,
-                "Main Menu" => 4
+        choices = { "🎼 Search All" => 1, 
+                "🎶 Search By Genre" => 2, 
+                "🎵 Search by Name" => 3,
+                "🏠 Main Menu" => 4
             }
         action = @@prompt.select("Choose an option:", choices)
         case action
@@ -289,20 +304,29 @@ class CLI
             counter += 1
         end
 
-        # choose one and output the associated tracks
-        action = @@prompt.select("Choose a playlist:", choices)
-        playlist = Playlist.find_by_name(choices.key(action)).first
+        if !(Playlist.find_by_name(name).empty?) #if there are playlist with that name
+            # choose one and output the associated tracks
+            action = @@prompt.select("Choose a playlist:", choices)
+            playlist = Playlist.find_by_name(choices.key(action)).first
 
-        # option to add to my playlists or go to playlists menu
-        self.playlist_options(playlist)
+            # option to add to my playlists or go to playlists menu
+            self.playlist_options(playlist)
+        else
+            puts "Can't find a playlist associated with that name"
+            sleep(2)
+            system('clear')
+            puts @@pastel.green(@@artii.asciify("Playlists"))
+            puts "\n"
+            self.search_by_name
+        end
     end
 
     def playlist_options(playlist)
         system('clear')
-        puts @@artii.asciify("Playlists")
+        puts @@pastel.green(@@artii.asciify("Playlists"))
         self.track_list(playlist)
         puts "\n"
-        choices = {"Yes" => 1, "No" => 2}
+        choices = {"✅ Yes" => 1, "❌ No" => 2}
         action = @@prompt.select("Add this playlist to your playlists?", choices)
         case action
         when 1
