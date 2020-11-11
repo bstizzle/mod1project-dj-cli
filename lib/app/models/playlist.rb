@@ -21,7 +21,7 @@ class Playlist < ActiveRecord::Base
     end
 
     def listen_to_tracks #prints urls to spotify tracks
-        self.tracks.map{ |track| RSpotify::Track.find(track).external_urls }
+        self.tracks.map{ |track| RSpotify::Track.find(track).external_urls["spotify"] }
     end 
 
     def creator #returns the user instance that created the playlist

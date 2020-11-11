@@ -22,11 +22,15 @@ p6 = Playlist.create(user_id: ben.id, name: "Bebop", genre: "Jazz")
 superstition = RSpotify::Track.search('Superstition', limit: 1, market: 'US').first
 idiot = RSpotify::Track.search('American Idiot', limit: 1, market: 'US').first
 glass = RSpotify::Track.search('Glass Island', limit: 1, market: 'US').first
+anthropology = RSpotify::Track.search('Anthropology', limit: 1, market: 'US').first
+
 
 PlaylistTrack.create(playlist_id: p1.id, track_id: superstition.id)
 PlaylistTrack.create(playlist_id: p1.id, track_id: idiot.id)
 PlaylistTrack.create(playlist_id: p5.id, track_id: glass.id)
 PlaylistTrack.create(playlist_id: p2.id, track_id: glass.id)
+PlaylistTrack.create(playlist_id: p6.id, track_id: glass.id)
+PlaylistTrack.create(playlist_id: p6.id, track_id: anthropology.id)
 
 PlaylistUser.create(playlist_id: p1.id, user_id: ben.id)
 PlaylistUser.create(playlist_id: p1.id, user_id: brendan.id)
