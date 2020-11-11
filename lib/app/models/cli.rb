@@ -60,7 +60,7 @@ class CLI
         end
     end
 
-    def authenticate_username(username) # authenticate reutrning users' usernames
+    def authenticate_username(username) # authenticate returning users' usernames
         if User.all.any? { |user| user.username == username }
             puts "\nPlease enter your password:"
             password = gets.chomp
@@ -75,7 +75,7 @@ class CLI
             self.authenticate_username(username)
         end
     end
-    
+
     def authenticate_password(username, password) # authenticate reutrning users' passwords
         if User.all.any? { |user| user.username == username && user.password == password }
             self.spin_baby_spin
@@ -399,8 +399,28 @@ class CLI
         end 
     end
 
-    def spotifind(track_name) # encapsulates RSpotify search method
-        RSpotify::Track.search(track_name, limit: 1, market: 'US').first
+    def spotify_by_trackname(track_name) #encapsulates RSpotify search method for tracks
+        track_options = RSpotify::Track.search(track_name, limit: 10, market: 'US')
+        counter = 1
+        choices = {}
+        track_options.select do |track|
+            choices["#{track.name} by: #{@@pastel.green(track.artists.first.name)}"] = counter
+            counter += 1
+        end
+        action = @@prompt.select("Choose a track:", choices) #choose which song you want from a few search results
+        track = track_options[action-1]
+    end
+
+    def spotify_by_artistname(artist_name) #encapsulates RSpotify search method for artists
+        artist_options = RSpotify::Artist.search('Arctic', limit: 10, market: 'US')
+        counter = 1
+        choices = {}
+        artist_options.select do |artist|
+            choices[artist] = counter
+            counter += 1
+        end
+        action = @@prompt.select("Choose a artist:", choices) #choose which artist you want from a few search results
+        artist = artist_options[action-1]
     end
 
     def spin_baby_spin # initializes and closes spinner object
