@@ -29,7 +29,7 @@ class User < ActiveRecord::Base
         Playlist.destroy(playlist.id)
     end 
 
-    def self.current_user(username)
+    def self.current_user(username) #gets the user obj from input username
         User.all.find{|user| user.username == username}
     end
     

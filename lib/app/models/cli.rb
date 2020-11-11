@@ -140,7 +140,7 @@ class CLI
 
     ## CREATED PLAYLIST FUNCTIONALITY
 
-    def my_creations
+    def my_creations #see options for playlist user has created
         choices = {}
         counter = 1
         system('clear')
@@ -149,7 +149,7 @@ class CLI
         action_choices = { "Create New" => 1, "Edit Existing" => 2, "Delete" => 3, "Main Menu" => 4}
         option = @@prompt.select("Choose an option:", action_choices)
         case option
-        when 1
+        when 1 
             # do something
             puts "Please enter a name for your new playlist:"
             name = gets.chomp
@@ -158,7 +158,7 @@ class CLI
             Playlist.create(user_id: @@current_user.id, name: name, genre: genre)
             puts "Created #{name} playlist."
             sleep(2)
-            self.my_creations
+            self.my_creations #creates new empty playlist then goes back to the options menu
         when 2
             @@current_user.playlists.each do |playlist|
                 choices[playlist.name] = counter
@@ -173,13 +173,13 @@ class CLI
             puts "\n"
             options = { "Add" => 1, "Remove" => 2, "Back" => 3}
             selection = @@prompt.select("Choose an option:", options)
-            case selection
+            case selection #gives choices for what to edit about playlist
             when 1 # add to playlist
                 puts "\n"
                 puts "Enter the song name you wish to add:"
                 song_name = gets.chomp
                 playlist.add_track(spotifind(song_name))
-                self.my_creations
+                self.my_creations #adds requested track to playlist and goes back to options menu
             when 2 # remove track from playlist
                 system('clear')
                 puts @@artii.asciify("My Created Playlists")
@@ -193,17 +193,17 @@ class CLI
                 track_action = @@prompt.select("Choose a track to remove:", track_hash)
                 track = self.spotifind(track_hash.key(track_action))
                 playlist.remove_track(track)
-                self.my_creations
+                self.my_creations #removes requested track from playlist and goes back to options menu
             when 3 # go back
-                self.my_creations
+                self.my_creations 
             end 
-        when 3
+        when 3 #delete entire playlist
             @@current_user.playlists.each do |playlist|
                 choices[playlist.name] = counter
                 counter += 1
             end
             action = @@prompt.select("Choose a playlist:", choices)
-        when 4
+        when 4 #go back to main menu
             self.launch_dashboard
         end
     end
@@ -277,7 +277,7 @@ class CLI
         self.playlist_options(selected_playlist)
     end
 
-    def search_by_name
+    def search_by_name #searches through all playlists by input name
         choices = {}
         counter = 1
         puts "Please enter a playlist name:"
@@ -297,7 +297,7 @@ class CLI
         self.playlist_options(playlist)
     end
 
-    def playlist_options(playlist)
+    def playlist_options(playlist) #after selecting a playlist from a search method, ask to add or not
         system('clear')
         puts @@artii.asciify("Playlists")
         self.track_list(playlist)
@@ -335,7 +335,7 @@ class CLI
         end 
     end
 
-    def spotifind(track_name)
+    def spotifind(track_name) #encapsulates RSpotify search method
         RSpotify::Track.search(track_name, limit: 1, market: 'US').first
     end
 end
