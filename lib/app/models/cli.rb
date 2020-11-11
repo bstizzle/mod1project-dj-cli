@@ -1,7 +1,8 @@
-require "tty-prompt"
+require 'tty-prompt'
 require "pry"
 require 'rest-client'  
 require 'json' 
+require 'tty-spinner'
 
 class CLI 
 
@@ -9,6 +10,7 @@ class CLI
     @@artii = Artii::Base.new :font => 'standard'
     @@current_user = ''
     @@pastel = Pastel.new 
+    @@spinner = TTY::Spinner.new("[:spinner] Loading...", format: :pulse_2)
 
     def welcome # launches auth flow and prints welcome graphic
         system('clear')
@@ -23,11 +25,11 @@ class CLI
         action = @@prompt.select("What would you like to do?", choices)
         case action
         when 1
-            puts "Please enter your username:"
+            puts "\nPlease enter your username:"
             username = gets.chomp
             self.authenticate_username(username)
         when 2
-            puts "Please enter a new username:"
+            puts "\nPlease enter a new username:"
             username = gets.chomp
             self.setup_username(username)
         when 3
@@ -39,41 +41,53 @@ class CLI
 
     def setup_username(username) # username setup for new users
         if User.all.any? { |user| user.username == username }
-            puts "Oops! That name is already taken."
+            self.spin_baby_spin
+            puts "\nOops! That username is already taken."
             sleep(2)
-            puts "Please enter another username:"
+            puts "\nPlease enter another username:"
             new_username = gets.chomp
             self.setup_username(new_username)
         else
-            puts "Perfect. Please create a password:"
+            puts "\nGreat choice 💯" 
+            sleep(2)
+            puts "\nNow, create a password (the longer, the better 👀):"
             password = gets.chomp
             @@current_user = User.create(username: username, password: password)
+            self.spin_baby_spin
+            puts "\nYou're all set. Welcome to the Spotify-Lite fam 🎼"
             sleep(2)
-            puts "You're all set. We are excited to have you!"
             self.launch_dashboard
         end
     end
 
     def authenticate_username(username) # authenticate returning users' usernames
         if User.all.any? { |user| user.username == username }
-            puts "Please enter your password:"
+            puts "\nPlease enter your password:"
             password = gets.chomp
             self.authenticate_password(username, password)
         else
-            puts "We don't recognize that username. Please re-enter your username:"
+            puts "\nWe don't recognize that username. Please re-enter your username (or type exit to quit):"
             username = gets.chomp
+            if username == 'exit'
+                system('clear')
+                return
+            end
             self.authenticate_username(username)
         end
     end
-    
-    def authenticate_password(username, password) # authenticate returning users' passwords
-        if User.all.any? { |user| user.username == username && user.password = password }
-            puts "Welcome back!"
+
+    def authenticate_password(username, password) # authenticate reutrning users' passwords
+        if User.all.any? { |user| user.username == username && user.password == password }
+            self.spin_baby_spin
             @@current_user = User.current_user(username)
             self.launch_dashboard
         else
-            puts "We don't recognize that password. Please re-enter your password:"
+            puts "\nWe don't recognize that password. Please re-enter your password (or type exit to quit):"
             new_password = gets.chomp
+            if new_password == 'exit'
+                system('clear')
+                return
+            end
             self.authenticate_password(username, new_password)
         end
     end
@@ -102,7 +116,7 @@ class CLI
         end
     end
 
-    ## My Library screen
+    ## My library functionality
 
     def my_library
         # initiate choices based on my library
@@ -112,8 +126,9 @@ class CLI
         if @@current_user.library.size == 0
             ## add loading spinner here
             puts "You don't have any favorite playlists yet!"
-            puts "Try adding some under Search Playlists"
-            sleep(3)
+            sleep(2)
+            puts "\nTry adding some under Search Playlists"
+            sleep(2)
             self.launch_dashboard
         else
             choices = {}
@@ -153,7 +168,7 @@ class CLI
         end
     end
 
-    ## CREATED PLAYLIST FUNCTIONALITY
+    ## Created playlist functionality
 
     def my_creations #see options for playlist user has created
         choices = {}
@@ -161,11 +176,10 @@ class CLI
         system('clear')
         puts @@pastel.green(@@artii.asciify("My Created Playlists"))
         puts "\n"
-        action_choices = { "🆕 Create New" => 1, "🎛️ Edit Existing" => 2, "❌ Delete" => 3, "🏠 Main Menu" => 4}
+        action_choices = { "🆕 Create New" => 1, "🎛️  Edit Existing" => 2, "❌ Delete" => 3, "🏠 Main Menu" => 4}
         option = @@prompt.select("Choose an option:", action_choices)
         case option
-        when 1 
-            # do something
+        when 1 # create new playlist
             puts "Please enter a name for your new playlist:"
             name = gets.chomp
             puts "Enter a genre:"
@@ -174,57 +188,82 @@ class CLI
             puts "Created #{name} playlist."
             sleep(2)
             self.my_creations #creates new empty playlist then goes back to the options menu
-        when 2
+        when 2 # edit existing 
+            edit_choices = {}
+            edit_counter = 1
             @@current_user.playlists.each do |playlist|
-                choices[playlist.name] = counter
-                counter += 1
+                edit_choices[playlist.name] = edit_counter
+                edit_counter += 1
             end
-            action = @@prompt.select("Choose a playlist:", choices)
-            playlist = Playlist.find_by_name(choices.key(action)).first
+            edit_action = @@prompt.select("Choose a playlist:", edit_choices)
+            playlist_to_edit = Playlist.find_by_name(edit_choices.key(edit_action)).first
             system('clear')
             puts @@pastel.green(@@artii.asciify("My Created Playlists"))
             puts "\n"
-            self.track_list(playlist)
+            self.track_list(playlist_to_edit)
             puts "\n"
-            options = { "➕ Add" => 1, "❌ Remove" => 2, "🔙 Back" => 3}
-            selection = @@prompt.select("Choose an option:", options)
+            edit_options = { "➕ Add" => 1, "❌ Remove" => 2, "🔙 Back" => 3}
+            selection = @@prompt.select("Choose an option:", edit_options)
             case selection #gives choices for what to edit about playlist
             when 1 # add to playlist
                 puts "\n"
                 puts "Enter the song name you wish to add:"
                 song_name = gets.chomp
-                chosen_song = spotify_by_trackname(song_name)
-                playlist.add_track(chosen_song)
+                playlist_to_edit.add_track(spotifind(song_name))
                 self.my_creations #adds requested track to playlist and goes back to options menu
             when 2 # remove track from playlist
-                system('clear')
-                puts @@pastel.green(@@artii.asciify("My Created Playlists"))
-                puts "Select the track you want to remove:"
-                track_hash = {}
-                track_counter = 1
-                playlist.track_names.map do |track|
-                    track_hash[track.split("by:")[0]] = counter
-                    counter += 1
+                if !(playlist_to_edit.tracks.empty?)
+                    system('clear')
+                    puts @@pastel.green(@@artii.asciify("My Created Playlists"))
+                    puts "Select the track you want to remove:"
+                    track_hash = {}
+                    track_counter = 1
+                    playlist_to_edit.track_names.map do |track|
+                        track_hash[track.split("by:")[0]] = track_counter
+                        track_counter += 1
+                    end
+                    track_action = @@prompt.select("Choose a track to remove:", track_hash)
+                    track = self.spotifind(track_hash.key(track_action))
+                    playlist_to_edit.remove_track(track)
+                    self.my_creations #removes requested track from playlist and goes back to options menu
+                else
+                    puts "\nThere are no tracks in that playlist"
+                    self.spin_baby_spin
+                    self.my_creations
                 end
-                track_action = @@prompt.select("Choose a track to remove:", track_hash)
-                track = spotify_by_trackname(track_hash.key(track_action))
-                playlist.remove_track(track)
-                self.my_creations #removes requested track from playlist and goes back to options menu
             when 3 # go back
                 self.my_creations 
             end 
-        when 3 #delete entire playlist
-            @@current_user.playlists.each do |playlist|
-                choices[playlist.name] = counter
-                counter += 1
+        when 3 # delete entire playlist
+            if @@current_user.playlists.size == 0
+                puts "\nLooks like you don't have any playlists to delete 🤦"
+                sleep(5)
+                self.my_creations 
+            else
+                ###PROBLEM FOR INSTRUCTORS HEREEEE
+                deletion_choices = {}
+                delete_counter = 1
+                @@current_user.playlists.each do |playlist|
+                    deletion_choices[playlist.name] = delete_counter
+                    delete_counter += 1
+                end
+                binding.pry
+                deletion_choice = @@prompt.select("Choose a playlist to delete:", deletion_choices)
+                playlist_obj = Playlist.find_by_name(deletion_choices.key(deletion_choice)).first
+                #@@current_user.remove_playlist(playlist_obj)
+                @@current_user.delete_playlist(playlist_obj) # THIS IS THE PROBLEM
+                self.spin_baby_spin
+                puts "\nSuccessfully removed #{playlist_obj.name}"
+                sleep(2)
+                self.my_creations 
+                ###PROBLEM ABOVE!!!!!!!!!!!!!!!
             end
-            action = @@prompt.select("Choose a playlist:", choices)
         when 4 #go back to main menu
             self.launch_dashboard
         end
     end
 
-    ## PLAYLIST SEARCH FUNCTIONALITY
+    ## Playlist search functionality 
 
     def search_playlists # main search playlists menu
         system('clear')
@@ -345,15 +384,15 @@ class CLI
         end
     end
 
-    #FORMATING HELPER METHODS
+    ## Formatting helper methods
 
-    def track_list(playlist) #encapsulated formatting for UI niceness
+    def track_list(playlist) # encapsulated formatting for UI niceness
         puts "\n"
         puts "The tracks in #{playlist.name} include:"
         puts "\n"
         counter = 0
         playlist.tracks.each do |track|
-            puts playlist.track_names[counter] #uses Playlist#track_names
+            puts playlist.track_names[counter] # uses Playlist#track_names
             puts playlist.listen_to_tracks[counter]
             puts "\n"
             counter += 1
@@ -383,4 +422,12 @@ class CLI
         action = @@prompt.select("Choose a artist:", choices) #choose which artist you want from a few search results
         artist = artist_options[action-1]
     end
+
+    def spin_baby_spin # initializes and closes spinner object
+        puts "\n"
+        @@spinner.auto_spin 
+        sleep(2)
+        @@spinner.stop
+    end
+
 end
