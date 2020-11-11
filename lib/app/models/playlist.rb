@@ -14,7 +14,7 @@ class Playlist < ActiveRecord::Base
         end.compact
     end
 
-    def track_names
+    def track_names #returns array of strings "Track Name by: Artist Name"
         self.tracks.map do |track|
             "#{RSpotify::Track.find(track).name} by: #{RSpotify::Track.find(track).artists.first.name}" 
         end 
