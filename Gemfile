@@ -16,3 +16,6 @@ gem 'artii', '~> 2.1', '>= 2.1.2'
 gem 'rmagick'
 # gem 'catpix'
 gem "tty-spinner"
+gem 'tty-color'
+gem 'tty-font'
+gem 'tty-progressbar'
