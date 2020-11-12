@@ -67,7 +67,7 @@ class CLI
             self.authenticate_password(username, password)
         else
             puts "\nWe don't recognize that username."
-            puts "\nPlease re-enter your username (type exit to 'quit' or type 'sign up' to create an account):"
+            puts "\nPlease re-enter your username (type 'exit' to quit or type 'sign up' to create an account):"
             username = gets.chomp
             if username.downcase == 'exit'
                 system('clear')
@@ -159,7 +159,7 @@ class CLI
                 # select a playlist and output tracks
                 playlist = Playlist.find_by_name(choices.key(action)).first
                 system('clear')
-                puts @@pastel.green(@@artii.asciify("My Library"))
+                puts @@pastel.green(@@artii.asciify("#{playlist.name}"))
                 self.track_list(playlist)
 
                 # subsequent options: remove & back
@@ -202,16 +202,20 @@ class CLI
     end
 
     def create_new_playlist #create new playlist helper method
-        puts "\nPlease enter a name for your new playlist:"
+        puts "\nPlease enter a name for your new playlist (or hit enter to go back):"
         name = gets.chomp
-        puts "\nEnter a genre:"
-        genre = gets.chomp
-        playlist = Playlist.create(user_id: @@current_user.id, name: name, genre: genre)
-        @@current_user.reload
-        self.spin_baby_spin
-        puts "\nCreated #{name} playlist."
-        sleep(2)
-        self.select_playlist_to_edit(playlist) #creates new empty playlist then goes back to the options menu
+        if name == ""
+            self.my_creations
+        else
+            puts "\nEnter a genre:"
+            genre = gets.chomp
+            playlist = Playlist.create(user_id: @@current_user.id, name: name, genre: genre)
+            @@current_user.reload
+            self.spin_baby_spin
+            puts "\nCreated #{name} playlist."
+            sleep(2)
+            self.select_playlist_to_edit(playlist) #creates new empty playlist then goes back to the options menu
+        end
     end
 
     def edit_existing_playlist #edit existing helper method
@@ -391,7 +395,7 @@ class CLI
 
     def playlist_options(playlist) #after selecting a playlist from a search method, ask to add or not
         system('clear')
-        puts @@pastel.green(@@artii.asciify("Playlists"))
+        puts @@pastel.green(@@artii.asciify("#{playlist.name}"))
         self.track_list(playlist)
         puts "\n"
         choices = {"✅ Yes" => 1, "❌ No" => 2}
