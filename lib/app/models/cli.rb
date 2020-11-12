@@ -66,13 +66,19 @@ class CLI
             password = gets.chomp
             self.authenticate_password(username, password)
         else
-            puts "\nWe don't recognize that username. Please re-enter your username (or type exit to quit):"
+            puts "\nWe don't recognize that username."
+            puts "\nPlease re-enter your username (type exit to 'quit' or type 'sign up' to create an account):"
             username = gets.chomp
-            if username == 'exit'
+            if username.downcase == 'exit'
                 system('clear')
                 return
+            elsif username.downcase == 'sign up'
+                puts "\nPlease enter your desired username:"
+                new_username = gets.chomp
+                self.setup_username(new_username)
+            else
+                self.authenticate_username(username)
             end
-            self.authenticate_username(username)
         end
     end
 
@@ -141,7 +147,7 @@ class CLI
             end
         else
             choices = self.create_choices_hash(@@current_user.library)
-            choices["Back"] = (choices.size + 1)
+            #choices["Back"] = (choices.size + 1)
             action = @@prompt.select("Your playlists:", choices)
 
             # check if user wants to go back
@@ -156,7 +162,7 @@ class CLI
 
                 # subsequent options: remove & back
                 puts "\n"
-                option_choices = { "❌ Remove" => 1, "🏠 Back" => 2}
+                option_choices = { "❌ Remove" => 1, "🔙 Back" => 2}
                 option_choice = @@prompt.select("Choose an option:", option_choices)
                 case option_choice
                 when 1
@@ -307,46 +313,64 @@ class CLI
     def search_all_playlists # allows users to select from all playlists 
         choices = self.create_choices_hash(Playlist.all)
         action = @@prompt.select("Choose a playlist:", choices)
-        playlist = Playlist.find_by_name(choices.key(action)).first
-        self.playlist_options(playlist)
-        #end
+        if action == choices.size
+            self.search_playlists
+        else
+            playlist = Playlist.find_by_name(choices.key(action)).first
+            self.playlist_options(playlist)
+        end
     end
 
     def search_by_genre # see list of all genres; see list of all playlists in selected genre
         genre_choices = self.create_choices_hash(Playlist.all_genres)
         action_1 = @@prompt.select("Choose a genre:", genre_choices)
 
-        playlist_choices = self.create_choices_hash(Playlist.find_by_genre(genre_choices.key(action_1)))
-        action_2 = @@prompt.select("Choose a playlist:", playlist_choices)
+        if action_1 == genre_choices.size 
+            self.search_playlists
+        else
+            playlist_choices = self.create_choices_hash(Playlist.find_by_genre(genre_choices.key(action_1)))
+            action_2 = @@prompt.select("Choose a playlist:", playlist_choices)
 
-        # based on selected playlist, output songs
-        selected_playlist_name = playlist_choices.key(action_2)
-        selected_playlist = Playlist.all.find{|playlist| playlist.name == selected_playlist_name}
-       
-        # add functionality to add to my playlists            
-        self.playlist_options(selected_playlist)
+            if action_2 == playlist_choices.size 
+                self.search_playlists
+            else
+                # based on selected playlist, output songs
+                selected_playlist_name = playlist_choices.key(action_2)
+                selected_playlist = Playlist.all.find{|playlist| playlist.name == selected_playlist_name}
+            
+                # add functionality to add to my playlists            
+                self.playlist_options(selected_playlist)
+            end
+        end
     end
 
     def search_by_name #searches through all playlists by input name
-        puts "\nPlease enter a playlist name:"
+        puts "\nPlease enter a playlist name (hit enter to go back):"
         name = gets.chomp
-        
-        choices = self.create_choices_hash(Playlist.find_by_name(name))
+        if name == ''
+            self.search_playlists
+        else 
+            choices = self.create_choices_hash(Playlist.find_by_name(name))
 
-        if !(Playlist.find_by_name(name).empty?) #if there are playlist with that name
-            # choose one and output the associated tracks
-            action = @@prompt.select("Choose a playlist:", choices)
-            playlist = Playlist.find_by_name(choices.key(action)).first
+            if !(Playlist.find_by_name(name).empty?) #if there are playlist with that name
+                # choose one and output the associated tracks
+                action = @@prompt.select("Choose a playlist:", choices)
+                if action == choices.size
+                    self.search_playlists
+                else
+                    playlist = Playlist.find_by_name(choices.key(action)).first
 
-            # option to add to my playlists or go to playlists menu
-            self.playlist_options(playlist)
-        else
-            puts "Can't find a playlist associated with that name"
-            sleep(2)
-            system('clear')
-            puts @@pastel.green(@@artii.asciify("Playlists"))
-            puts "\n"
-            self.search_by_name
+                    # option to add to my playlists or go to playlists menu
+                    self.playlist_options(playlist)
+                end
+            else
+                puts "Can't find a playlist associated with that name"
+                sleep(2)
+                system('clear')
+                puts @@pastel.green(@@artii.asciify("Playlists"))
+                puts "\n"
+                self.search_by_name
+            end
         end
     end
 
@@ -430,6 +454,7 @@ class CLI
             end 
             counter += 1
         end
+        choices["🔙 Back"] = counter
         choices
     end
 
