@@ -69,5 +69,8 @@ As A User, I can see how many Users are listening to which of my Playlists
 
 ## KNOWN IMPROVEMENTS NEEDED
 
-More robust authentication flow (counter if you enter wrong username or pw)
+Edit existing has bug if u dont have any to edit
 
+Delete has bug 
+
+Need more back buttons everywhere
