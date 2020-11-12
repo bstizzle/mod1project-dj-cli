@@ -3,6 +3,7 @@ require "pry"
 require 'rest-client'  
 require 'json' 
 require 'tty-spinner'
+require 'launchy'
 
 class CLI 
 
@@ -11,6 +12,7 @@ class CLI
     @@current_user = ''
     @@pastel = Pastel.new 
     @@spinner = TTY::Spinner.new("[:spinner] Loading...", format: :pulse_2)
+    @@record_spinner = TTY::Spinner.new(":spinner ", format: :spin)
 
     def welcome # launches auth flow and prints welcome graphic
         system('clear')
@@ -67,7 +69,7 @@ class CLI
             self.authenticate_password(username, password)
         else
             puts "\nWe don't recognize that username."
-            puts "\nPlease re-enter your username (type exit to 'quit' or type 'sign up' to create an account):"
+            puts "\nPlease re-enter your username (type 'exit' to quit or type 'sign up' to create an account):"
             username = gets.chomp
             if username.downcase == 'exit'
                 system('clear')
@@ -159,21 +161,26 @@ class CLI
                 # select a playlist and output tracks
                 playlist = Playlist.find_by_name(choices.key(action)).first
                 system('clear')
-                puts @@pastel.green(@@artii.asciify("My Library"))
+                puts @@pastel.green(@@artii.asciify("#{playlist.name}"))
                 self.track_list(playlist)
 
                 # subsequent options: remove & back
                 puts "\n"
-                option_choices = { "❌ Remove" => 1, "🔙 Back" => 2}
+                option_choices = { "🎶 Play" => 1, "❌ Remove" => 2, "🔙 Back" => 3}
                 option_choice = @@prompt.select("Choose an option:", option_choices)
                 case option_choice
                 when 1
+                    system("clear")
+                    puts @@pastel.green(@@artii.asciify("#{playlist.name}"))
+                    puts "\n"
+                    self.play_playlist(playlist)
+                when 2
                     self.spin_baby_spin
                     puts "\nSuccessfully removed #{playlist.name} from your library"
                     @@current_user.remove_playlist(playlist)
                     sleep(2)
                     self.my_library
-                when 2
+                when 3
                     self.my_library
                 end
             end
@@ -202,16 +209,20 @@ class CLI
     end
 
     def create_new_playlist #create new playlist helper method
-        puts "\nPlease enter a name for your new playlist:"
+        puts "\nPlease enter a name for your new playlist (or hit enter to go back):"
         name = gets.chomp
-        puts "\nEnter a genre:"
-        genre = gets.chomp
-        playlist = Playlist.create(user_id: @@current_user.id, name: name, genre: genre)
-        @@current_user.reload
-        self.spin_baby_spin
-        puts "\nCreated #{name} playlist."
-        sleep(2)
-        self.select_playlist_to_edit(playlist) #creates new empty playlist then goes back to the options menu
+        if name == ""
+            self.my_creations
+        else
+            puts "\nEnter a genre:"
+            genre = gets.chomp
+            playlist = Playlist.create(user_id: @@current_user.id, name: name, genre: genre)
+            @@current_user.reload
+            self.spin_baby_spin
+            puts "\nCreated #{name} playlist."
+            sleep(2)
+            self.select_playlist_to_edit(playlist) #creates new empty playlist then goes back to the options menu
+        end
     end
 
     def edit_existing_playlist #edit existing helper method
@@ -391,7 +402,7 @@ class CLI
 
     def playlist_options(playlist) #after selecting a playlist from a search method, ask to add or not
         system('clear')
-        puts @@pastel.green(@@artii.asciify("Playlists"))
+        puts @@pastel.green(@@artii.asciify("#{playlist.name}"))
         self.track_list(playlist)
         puts "\n"
         choices = {"✅ Yes" => 1, "❌ No" => 2}
@@ -419,12 +430,15 @@ class CLI
         puts "The tracks in #{playlist.name} include:"
         puts "\n"
         counter = 0
+        
         playlist.tracks.each do |track|
+            @@record_spinner.auto_spin
             puts playlist.track_names[counter] # uses Playlist#track_names
             puts playlist.listen_to_tracks[counter]
             puts "\n"
             counter += 1
-        end 
+        end
+        @@record_spinner.stop('Copy the URLs to play the songs')
     end
 
     def spotify_by_trackname(track_name) #encapsulates RSpotify search method for tracks
@@ -473,4 +487,17 @@ class CLI
         choices
     end
 
+    def play_playlist(playlist)
+        track_name_list = self.create_choices_hash(playlist.track_names)
+        track_id_list = self.create_choices_hash(playlist.tracks)
+        puts "\n"
+        play_action = @@prompt.select("Select a song to play:", track_name_list)
+        if play_action == track_name_list.size
+            self.my_library
+        else
+            track_url = RSpotify::Track.find(track_id_list.key(play_action)).external_urls["spotify"]
+            Launchy.open(track_url)
+            self.play_playlist(playlist)       
+        end
+    end
 end
