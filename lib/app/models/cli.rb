@@ -22,7 +22,7 @@ class CLI
 
     def display_menu # this displays initial log-in menu
         choices = { "Log in" => 1, "Sign up" => 2, "Exit" => 3}
-        action = @@prompt.select("What would you like to do?", choices)
+        action = @@prompt.select("\nWhat would you like to do?", choices)
         case action
         when 1
             puts "\nPlease enter your username:"
@@ -66,13 +66,19 @@ class CLI
             password = gets.chomp
             self.authenticate_password(username, password)
         else
-            puts "\nWe don't recognize that username. Please re-enter your username (or type exit to quit):"
+            puts "\nWe don't recognize that username."
+            puts "\nPlease re-enter your username (type exit to 'quit' or type 'sign up' to create an account):"
             username = gets.chomp
-            if username == 'exit'
+            if username.downcase == 'exit'
                 system('clear')
                 return
+            elsif username.downcase == 'sign up'
+                puts "\nPlease enter your desired username:"
+                new_username = gets.chomp
+                self.setup_username(new_username)
+            else
+                self.authenticate_username(username)
             end
-            self.authenticate_username(username)
         end
     end
 
@@ -100,7 +106,8 @@ class CLI
         choices = { "📚 My Library" => 1, 
                 "🎶 My Created Playlists" => 2, 
                 "🔍 Search Playlists" => 3,
-                "👋 Exit" => 4
+                "💻 Sign Out" => 4,
+                "👋 Exit" => 5
             }
         action = @@prompt.select("Choose an option:", choices)
         case action
@@ -111,8 +118,9 @@ class CLI
         when 3
             self.search_playlists
         when 4
+            self.display_menu
+        when 5
             system('clear')
-            return 
         end
     end
 
@@ -129,38 +137,47 @@ class CLI
             sleep(2)
             puts "\nTry adding some under Search Playlists"
             sleep(2)
-            self.launch_dashboard
-        else
-            choices = self.create_choices_hash(@@current_user.library)
-            action = @@prompt.select("Choose a playlist:", choices)
-
-            # select a playlist and output tracks
-            playlist = Playlist.find_by_name(choices.key(action)).first
-            system('clear')
-            puts @@pastel.green(@@artii.asciify("My Library"))
-            self.track_list(playlist)
-
-            # subsequent options: play, add, back
-            puts "\n"
-            option_choices = { "🎹 Play" => 1, "❌ Remove" => 2, "🏠 Main Menu" => 3}
-            option_choice = @@prompt.select("Choose an option:", option_choices)
-            case option_choice
+            choices = { "Search Playlists" => 1, "Back" => 2}
+            action = @@prompt.select("\n", choices)
+            case action
             when 1
-                puts playlist.listen_to_tracks
-                puts "\n"
-                back = { "Back" => 1}
-                go_back = @@prompt.select("Go back to the main menu:", back)
-                case go_back
-                when 1
-                    self.launch_dashboard
-                end
+                self.search_playlists
             when 2
-                @@current_user.remove_playlist(playlist)
-                self.my_library
-            when 3
                 self.launch_dashboard
             end
-        end
+        else
+            choices = self.create_choices_hash(@@current_user.library)
+            choices["🔍 Search Playlists"] = (choices.size + 1)
+            action = @@prompt.select("Your playlists:", choices)
+
+            # check if user wants to go back
+            if action == choices.size-1
+                self.launch_dashboard 
+            elsif action == choices.size 
+                self.search_playlists
+            else
+                # select a playlist and output tracks
+                playlist = Playlist.find_by_name(choices.key(action)).first
+                system('clear')
+                puts @@pastel.green(@@artii.asciify("My Library"))
+                self.track_list(playlist)
+
+                # subsequent options: remove & back
+                puts "\n"
+                option_choices = { "❌ Remove" => 1, "🔙 Back" => 2}
+                option_choice = @@prompt.select("Choose an option:", option_choices)
+                case option_choice
+                when 1
+                    self.spin_baby_spin
+                    puts "\nSuccessfully removed #{playlist.name} from your library"
+                    @@current_user.remove_playlist(playlist)
+                    sleep(2)
+                    self.my_library
+                when 2
+                    self.my_library
+                end
+            end
+        end    
     end
 
     ## Created playlist functionality
@@ -171,83 +188,113 @@ class CLI
         system('clear')
         puts @@pastel.green(@@artii.asciify("My Created Playlists"))
         puts "\n"
-        action_choices = { "🆕 Create New" => 1, "🎛️  Edit Existing" => 2, "❌ Delete" => 3, "🏠 Main Menu" => 4}
+        action_choices = { "💿 My Playlists" => 1, "🆕 Create New" => 2, "🏠 Main Menu" => 3}
+        #WE WANT create option, go back option, and list of selectable playlists
         option = @@prompt.select("Choose an option:", action_choices)
         case option
-        when 1 # create new playlist
-            puts "\nPlease enter a name for your new playlist:"
-            name = gets.chomp
-            puts "\nEnter a genre:"
-            genre = gets.chomp
-            Playlist.create(user_id: @@current_user.id, name: name, genre: genre)
+        when 1 #see and edit or delete existing playlist
+            self.edit_existing_playlist
+        when 2 # create new playlist
+            self.create_new_playlist
+        when 3 #go back to main menu
+            self.launch_dashboard
+        end
+    end
+
+    def create_new_playlist #create new playlist helper method
+        puts "\nPlease enter a name for your new playlist:"
+        name = gets.chomp
+        puts "\nEnter a genre:"
+        genre = gets.chomp
+        playlist = Playlist.create(user_id: @@current_user.id, name: name, genre: genre)
+        @@current_user.reload
+        self.spin_baby_spin
+        puts "\nCreated #{name} playlist."
+        sleep(2)
+        self.select_playlist_to_edit(playlist) #creates new empty playlist then goes back to the options menu
+    end
+
+    def edit_existing_playlist #edit existing helper method
+        system('clear')
+        puts @@pastel.green(@@artii.asciify("My Created Playlists"))
+        edit_choices = self.create_choices_hash(@@current_user.playlists)
+        if edit_choices.size == 1
             self.spin_baby_spin
-            puts "\nCreated #{name} playlist."
-            sleep(2)
-            self.my_creations #creates new empty playlist then goes back to the options menu
-        when 2 # edit existing 
-            edit_choices = self.create_choices_hash(@@current_user.playlists)
-            if edit_choices.size == 0
-                  self.spin_baby_spin
-                  puts "\nYou don't have any playlists to edit"
-                  sleep(1)
-                  puts "\nTry adding some under Create New"
-                  sleep(1)
-                  self.my_creations 
+            puts "\nYou don't have any playlists to edit"
+            sleep(1)
+            puts "\nTry adding some under Create New"
+            sleep(1)
+            back_hash = {"🔙 Back" => 1}
+            action = @@prompt.select("", back_hash)
+            self.my_creations
+        else
+            edit_action = @@prompt.select("\nChoose a playlist:", edit_choices)
+            if edit_action == edit_choices.size
+                self.my_creations
+            else
+                playlist_to_edit = Playlist.find_by_name(edit_choices.key(edit_action)).first 
+                self.select_playlist_to_edit(playlist_to_edit)
             end
-            edit_action = @@prompt.select("Choose a playlist:", edit_choices)
-            playlist_to_edit = Playlist.find_by_name(edit_choices.key(edit_action)).first
+        end
+    end
+
+    def select_playlist_to_edit(playlist)
+        system('clear')
+        puts @@pastel.green(@@artii.asciify("#{playlist.name}"))
+        puts "\n"
+        self.track_list(playlist)
+        puts "\n"
+        edit_options = { "➕ Add Track" => 1, "❌ Remove Track" => 2, "💥 Delete Playlist" => 3, "🔙 Back" => 4}
+        selection = @@prompt.select("Choose an option:", edit_options)
+        case selection #gives choices for what to edit about playlist
+        when 1 # add to playlist
+            self.edit_existing_add_to_playlist(playlist)
+        when 2 # remove track from playlist
+            self.edit_existing_remove_track(playlist)
+        when 3 #delete playlist from db
+            self.delete_existing_playlist(playlist)
+        when 4 # go back
+            self.edit_existing_playlist
+        end
+    end
+    
+    def edit_existing_add_to_playlist(playlist) #add track helper method
+        puts "\n"
+        puts "Enter the song name you wish to add:"
+        song_name = gets.chomp
+        playlist.add_track(spotify_by_trackname(song_name))
+        self.select_playlist_to_edit(playlist)
+    end
+
+    def edit_existing_remove_track(playlist) #remove track helper method
+        if !(playlist.tracks.empty?)
             system('clear')
             puts @@pastel.green(@@artii.asciify("My Created Playlists"))
-            puts "\n"
-            self.track_list(playlist_to_edit)
-            puts "\n"
-            edit_options = { "➕ Add" => 1, "❌ Remove" => 2, "🔙 Back" => 3}
-            selection = @@prompt.select("Choose an option:", edit_options)
-            case selection #gives choices for what to edit about playlist
-            when 1 # add to playlist
-                puts "\n"
-                puts "Enter the song name you wish to add:"
-                song_name = gets.chomp
-                playlist_to_edit.add_track(spotify_by_trackname(song_name))
-                self.my_creations #adds requested track to playlist and goes back to options menu
-            when 2 # remove track from playlist
-                if !(playlist_to_edit.tracks.empty?)
-                    system('clear')
-                    puts @@pastel.green(@@artii.asciify("My Created Playlists"))
-                    puts "Select the track you want to remove:"
-                    track_hash = self.create_choices_hash(playlist_to_edit.track_names)
-                    track_action = @@prompt.select("Choose a track to remove:", track_hash)
-                    playlist_to_edit.remove_track(RSpotify::Track.find(playlist_to_edit.tracks[track_action-1]))
-                    self.my_creations #removes requested track from playlist and goes back to options menu
-                else
-                    puts "\nThere are no tracks in that playlist"
-                    self.spin_baby_spin
-                    self.my_creations
-                end
-            when 3 # go back
-                self.my_creations 
-            end 
-        when 3 # delete entire playlist
-            if @@current_user.playlists.size == 0
-                puts "\nLooks like you don't have any playlists to delete 🤦"
-                sleep(2)
-                self.my_creations 
-            else
-                ###PROBLEM FOR INSTRUCTORS HEREEEE
-                deletion_choies = self.create_choices_hash(@@current_user.playlists)
-                binding.pry
-                deletion_choice = @@prompt.select("Choose a playlist to delete:", deletion_choices)
-                playlist_obj = Playlist.find_by_name(deletion_choices.key(deletion_choice)).first
-                #@@current_user.remove_playlist(playlist_obj)
-                @@current_user.delete_playlist(playlist_obj) # THIS IS THE PROBLEM
-                self.spin_baby_spin
-                puts "\nSuccessfully removed #{playlist_obj.name}"
-                sleep(2)
-                self.my_creations 
-                ###PROBLEM ABOVE!!!!!!!!!!!!!!!
-            end
-        when 4 #go back to main menu
-            self.launch_dashboard
+            puts "\nSelect the track you want to remove:"
+            track_hash = self.create_choices_hash(playlist.track_names)
+            track_action = @@prompt.select("\nChoose a track to remove:", track_hash)
+            playlist.remove_track(RSpotify::Track.find(playlist.tracks[track_action-1]))
+            self.select_playlist_to_edit(playlist) #removes requested track from playlist and goes back to options menu
+        else
+            puts "\nThere are no tracks in that playlist yet"
+            self.spin_baby_spin
+            self.select_playlist_to_edit(playlist)
+        end
+    end
+
+    def delete_existing_playlist(playlist) #delete playlist helper method
+        choices = {"✅ Yes" => 1, "❌ No" => 2}
+        action = @@prompt.select("\nAre you sure you want to delete this playlist?", choices)
+        case action
+        when 1
+            @@current_user.delete_playlist(playlist) 
+            @@current_user.reload
+            self.spin_baby_spin
+            puts "\nSuccessfully deleted #{playlist.name}"
+            sleep(2)
+            self.my_creations 
+        when 2
+            self.select_playlist_to_edit(playlist)
         end
     end
 
@@ -255,12 +302,13 @@ class CLI
 
     def search_playlists # main search playlists menu
         system('clear')
-        puts @@pastel.green(@@artii.asciify("Playlists"))
+        puts @@pastel.green(@@artii.asciify("Search Playlists"))
         puts "\n"
         choices = { "🎼 Search All" => 1, 
                 "🎶 Search By Genre" => 2, 
                 "🎵 Search by Name" => 3,
-                "🏠 Main Menu" => 4
+                "📚 My Library" => 4,
+                "🏠 Main Menu" => 5
             }
         action = @@prompt.select("Choose an option:", choices)
         case action
@@ -271,6 +319,8 @@ class CLI
         when 3
             self.search_by_name
         when 4
+            self.my_library
+        when 5
             self.launch_dashboard 
         end
     end
@@ -278,46 +328,64 @@ class CLI
     def search_all_playlists # allows users to select from all playlists 
         choices = self.create_choices_hash(Playlist.all)
         action = @@prompt.select("Choose a playlist:", choices)
-        playlist = Playlist.find_by_name(choices.key(action)).first
-        self.playlist_options(playlist)
-        #end
+        if action == choices.size
+            self.search_playlists
+        else
+            playlist = Playlist.find_by_name(choices.key(action)).first
+            self.playlist_options(playlist)
+        end
     end
 
     def search_by_genre # see list of all genres; see list of all playlists in selected genre
         genre_choices = self.create_choices_hash(Playlist.all_genres)
         action_1 = @@prompt.select("Choose a genre:", genre_choices)
 
-        playlist_choices = self.create_choices_hash(Playlist.find_by_genre(genre_choices.key(action_1)))
-        action_2 = @@prompt.select("Choose a playlist:", playlist_choices)
+        if action_1 == genre_choices.size 
+            self.search_playlists
+        else
+            playlist_choices = self.create_choices_hash(Playlist.find_by_genre(genre_choices.key(action_1)))
+            action_2 = @@prompt.select("Choose a playlist:", playlist_choices)
 
-        # based on selected playlist, output songs
-        selected_playlist_name = playlist_choices.key(action_2)
-        selected_playlist = Playlist.all.find{|playlist| playlist.name == selected_playlist_name}
-       
-        # add functionality to add to my playlists            
-        self.playlist_options(selected_playlist)
+            if action_2 == playlist_choices.size 
+                self.search_playlists
+            else
+                # based on selected playlist, output songs
+                selected_playlist_name = playlist_choices.key(action_2)
+                selected_playlist = Playlist.all.find{|playlist| playlist.name == selected_playlist_name}
+            
+                # add functionality to add to my playlists            
+                self.playlist_options(selected_playlist)
+            end
+        end
     end
 
     def search_by_name #searches through all playlists by input name
-        puts "\nPlease enter a playlist name:"
+        puts "\nPlease enter a playlist name (hit enter to go back):"
         name = gets.chomp
-        
-        choices = self.create_choices_hash(Playlist.find_by_name(name))
+        if name == ''
+            self.search_playlists
+        else 
+            choices = self.create_choices_hash(Playlist.find_by_name(name))
 
-        if !(Playlist.find_by_name(name).empty?) #if there are playlist with that name
-            # choose one and output the associated tracks
-            action = @@prompt.select("Choose a playlist:", choices)
-            playlist = Playlist.find_by_name(choices.key(action)).first
+            if !(Playlist.find_by_name(name).empty?) #if there are playlist with that name
+                # choose one and output the associated tracks
+                action = @@prompt.select("Choose a playlist:", choices)
+                if action == choices.size
+                    self.search_playlists
+                else
+                    playlist = Playlist.find_by_name(choices.key(action)).first
 
-            # option to add to my playlists or go to playlists menu
-            self.playlist_options(playlist)
-        else
-            puts "Can't find a playlist associated with that name"
-            sleep(2)
-            system('clear')
-            puts @@pastel.green(@@artii.asciify("Playlists"))
-            puts "\n"
-            self.search_by_name
+                    # option to add to my playlists or go to playlists menu
+                    self.playlist_options(playlist)
+                end
+            else
+                puts "Can't find a playlist associated with that name"
+                sleep(2)
+                system('clear')
+                puts @@pastel.green(@@artii.asciify("Playlists"))
+                puts "\n"
+                self.search_by_name
+            end
         end
     end
 
@@ -401,6 +469,7 @@ class CLI
             end 
             counter += 1
         end
+        choices["🔙 Back"] = counter
         choices
     end
 
