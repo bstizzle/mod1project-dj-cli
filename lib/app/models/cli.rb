@@ -131,12 +131,7 @@ class CLI
             sleep(2)
             self.launch_dashboard
         else
-            choices = {}
-            counter = 1
-            @@current_user.library.each do |playlist|
-                choices[playlist.name] = counter
-                counter += 1
-            end
+            choices = self.create_choices_hash(@@current_user.library)
             action = @@prompt.select("Choose a playlist:", choices)
 
             # select a playlist and output tracks
@@ -190,19 +185,14 @@ class CLI
             sleep(2)
             self.my_creations #creates new empty playlist then goes back to the options menu
         when 2 # edit existing 
-            edit_choices = {}
-            edit_counter = 1
-            @@current_user.playlists.each do |playlist|
-                edit_choices[playlist.name] = edit_counter
-                edit_counter += 1
-            end
+            edit_choices = self.create_choices_hash(@@current_user.playlists)
             if edit_choices.size == 0
-                self.spin_baby_spin
-                puts "\nYou don't have any playlists to edit"
-                sleep(1)
-                puts "\nTry adding some under Create New"
-                sleep(1)
-                self.my_creations 
+                  self.spin_baby_spin
+                  puts "\nYou don't have any playlists to edit"
+                  sleep(1)
+                  puts "\nTry adding some under Create New"
+                  sleep(1)
+                  self.my_creations 
             end
             edit_action = @@prompt.select("Choose a playlist:", edit_choices)
             playlist_to_edit = Playlist.find_by_name(edit_choices.key(edit_action)).first
@@ -225,12 +215,7 @@ class CLI
                     system('clear')
                     puts @@pastel.green(@@artii.asciify("My Created Playlists"))
                     puts "Select the track you want to remove:"
-                    track_hash = {}
-                    track_counter = 1
-                    playlist_to_edit.track_names.map do |track|
-                        track_hash[track.split("by:")[0]] = track_counter
-                        track_counter += 1
-                    end
+                    track_hash = self.create_choices_hash(playlist_to_edit.track_names)
                     track_action = @@prompt.select("Choose a track to remove:", track_hash)
                     playlist_to_edit.remove_track(RSpotify::Track.find(playlist_to_edit.tracks[track_action-1]))
                     self.my_creations #removes requested track from playlist and goes back to options menu
@@ -249,12 +234,7 @@ class CLI
                 self.my_creations 
             else
                 ###PROBLEM FOR INSTRUCTORS HEREEEE
-                deletion_choices = {}
-                delete_counter = 1
-                @@current_user.playlists.each do |playlist|
-                    deletion_choices[playlist.name] = delete_counter
-                    delete_counter += 1
-                end
+                deletion_choies = self.create_choices_hash(@@current_user.playlists)
                 binding.pry
                 deletion_choice = @@prompt.select("Choose a playlist to delete:", deletion_choices)
                 playlist_obj = Playlist.find_by_name(deletion_choices.key(deletion_choice)).first
@@ -296,12 +276,7 @@ class CLI
     end
     
     def search_all_playlists # allows users to select from all playlists 
-        counter = 1
-        choices = {}
-        Playlist.all.select do |playlist|
-            choices[playlist.name] = counter
-            counter += 1
-        end
+        choices = self.create_choices_hash(Playlist.all)
         action = @@prompt.select("Choose a playlist:", choices)
         playlist = Playlist.find_by_name(choices.key(action)).first
         self.playlist_options(playlist)
@@ -309,27 +284,10 @@ class CLI
     end
 
     def search_by_genre # see list of all genres; see list of all playlists in selected genre
-
-        # initialize hashes and counters
-        first_counter = 1
-        second_counter = 1
-        genre_choices = {}
-        playlist_choices = {} 
-
-        # select genre flow
-        genres = Playlist.all_genres
-        genres.select do |genre|
-            genre_choices[genre] = first_counter
-            first_counter += 1
-        end
+        genre_choices = self.create_choices_hash(Playlist.all_genres)
         action_1 = @@prompt.select("Choose a genre:", genre_choices)
 
-        # based on genre, display playlists
-        playlists  = Playlist.find_by_genre(genre_choices.key(action_1))
-        playlists.select do |playlist|
-            playlist_choices[playlist.name] = second_counter
-            second_counter += 1
-        end
+        playlist_choices = self.create_choices_hash(Playlist.find_by_genre(genre_choices.key(action_1)))
         action_2 = @@prompt.select("Choose a playlist:", playlist_choices)
 
         # based on selected playlist, output songs
@@ -341,16 +299,10 @@ class CLI
     end
 
     def search_by_name #searches through all playlists by input name
-        choices = {}
-        counter = 1
         puts "\nPlease enter a playlist name:"
         name = gets.chomp
-
-        # collect playlist candidates
-        Playlist.find_by_name(name).select do |playlist|
-            choices[playlist.name] = counter
-            counter += 1
-        end
+        
+        choices = self.create_choices_hash(Playlist.find_by_name(name))
 
         if !(Playlist.find_by_name(name).empty?) #if there are playlist with that name
             # choose one and output the associated tracks
@@ -436,6 +388,20 @@ class CLI
         @@spinner.auto_spin 
         sleep(2)
         @@spinner.stop
+    end
+
+    def create_choices_hash(resource) #helper method for filling our tty-prompy choice hashes, takes @@current_user.user_method as input for resource
+        counter = 1
+        choices = {}
+        resource.each do |item|
+            if item.is_a? String
+                choices[item] = counter
+            else
+                choices[item.name] = counter
+            end 
+            counter += 1
+        end
+        choices
     end
 
 end
