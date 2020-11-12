@@ -175,16 +175,25 @@ class CLI
         option = @@prompt.select("Choose an option:", action_choices)
         case option
         when 1 # create new playlist
-            puts "Please enter a name for your new playlist:"
+            puts "\nPlease enter a name for your new playlist:"
             name = gets.chomp
-            puts "Enter a genre:"
+            puts "\nEnter a genre:"
             genre = gets.chomp
             Playlist.create(user_id: @@current_user.id, name: name, genre: genre)
-            puts "Created #{name} playlist."
+            self.spin_baby_spin
+            puts "\nCreated #{name} playlist."
             sleep(2)
             self.my_creations #creates new empty playlist then goes back to the options menu
         when 2 # edit existing 
             edit_choices = self.create_choices_hash(@@current_user.playlists)
+            if edit_choices.size == 0
+                  self.spin_baby_spin
+                  puts "\nYou don't have any playlists to edit"
+                  sleep(1)
+                  puts "\nTry adding some under Create New"
+                  sleep(1)
+                  self.my_creations 
+            end
             edit_action = @@prompt.select("Choose a playlist:", edit_choices)
             playlist_to_edit = Playlist.find_by_name(edit_choices.key(edit_action)).first
             system('clear')
@@ -221,7 +230,7 @@ class CLI
         when 3 # delete entire playlist
             if @@current_user.playlists.size == 0
                 puts "\nLooks like you don't have any playlists to delete 🤦"
-                sleep(5)
+                sleep(2)
                 self.my_creations 
             else
                 ###PROBLEM FOR INSTRUCTORS HEREEEE
@@ -290,7 +299,7 @@ class CLI
     end
 
     def search_by_name #searches through all playlists by input name
-        puts "Please enter a playlist name:"
+        puts "\nPlease enter a playlist name:"
         name = gets.chomp
         
         choices = self.create_choices_hash(Playlist.find_by_name(name))
@@ -323,10 +332,10 @@ class CLI
         when 1
             # add to my playlists
             if @@current_user.has_playlist?(playlist)
-                puts "Already in your library silly!"
+                puts "\nLooks like that playlist is already in your library 👌"
             else
                 @@current_user.add_playlist(playlist)
-                puts "Successfully added to your playlists"
+                puts "\nSuccessfully added #{playlist.name} to your library"
             end
             sleep(2)
             self.search_playlists
