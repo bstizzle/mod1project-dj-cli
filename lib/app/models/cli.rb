@@ -160,31 +160,47 @@ class CLI
             else
                 # select a playlist and output tracks
                 playlist = Playlist.find_by_name(choices.key(action)).first
-                system('clear')
-                puts @@pastel.green(@@artii.asciify("#{playlist.name}"))
-                self.track_list(playlist)
-
-                # subsequent options: remove & back
-                puts "\n"
-                option_choices = { "🎶 Play" => 1, "❌ Remove" => 2, "🔙 Back" => 3}
-                option_choice = @@prompt.select("Choose an option:", option_choices)
-                case option_choice
-                when 1
-                    system("clear")
-                    puts @@pastel.green(@@artii.asciify("#{playlist.name}"))
-                    puts "\n"
-                    self.play_playlist(playlist)
-                when 2
-                    self.spin_baby_spin
-                    puts "\nSuccessfully removed #{playlist.name} from your library"
-                    @@current_user.remove_playlist(playlist)
-                    sleep(2)
-                    self.my_library
-                when 3
-                    self.my_library
-                end
+                self.select_library_playlist(playlist)
             end
         end    
+    end
+
+    ## my_libray helper methods
+
+    def select_library_playlist(playlist)
+        system('clear')
+        puts @@pastel.green(@@artii.asciify("#{playlist.name}"))
+        puts @@pastel.blue(@@artii.asciify("by: #{playlist.user.username}"))
+        self.track_list(playlist)
+        # subsequent options: remove & back
+        puts "\n"
+        option_choices = { "🎶 Play" => 1, "❌ Remove" => 2, "🔙 Back" => 3}
+        option_choice = @@prompt.select("Choose an option:", option_choices)
+        case option_choice
+        when 1
+            self.play_playlist(playlist)
+            self.select_library_playlist(playlist)
+        when 2
+            self.remove_playlist_from_library(playlist)
+        when 3
+            self.my_library
+        end
+    end
+
+    def remove_playlist_from_library(playlist)
+        choices = {"✅ Yes" => 1, "❌ No" => 2}
+        action = @@prompt.select("\nAre you sure you want to remove this playlist?", choices)
+        case action
+        when 1
+            @@current_user.remove_playlist(playlist) 
+            @@current_user.reload
+            self.spin_baby_spin
+            puts "\nSuccessfully removed #{playlist.name} from library"
+            sleep(2)
+            self.my_library 
+        when 2
+            self.select_library_playlist(playlist)
+        end
     end
 
     ## Created playlist functionality
@@ -207,6 +223,8 @@ class CLI
             self.launch_dashboard
         end
     end
+
+    ## my_creations helper methods
 
     def create_new_playlist #create new playlist helper method
         puts "\nPlease enter a name for your new playlist (or hit enter to go back):"
@@ -252,19 +270,23 @@ class CLI
     def select_playlist_to_edit(playlist)
         system('clear')
         puts @@pastel.green(@@artii.asciify("#{playlist.name}"))
+        puts @@pastel.blue(@@artii.asciify("by: #{playlist.user.username}"))
         puts "\n"
         self.track_list(playlist)
         puts "\n"
-        edit_options = { "➕ Add Track" => 1, "❌ Remove Track" => 2, "💥 Delete Playlist" => 3, "🔙 Back" => 4}
+        edit_options = { "➕ Add Track" => 1, "❌ Remove Track" => 2, "🎶 Play Tracks" => 3, "💥 Delete Playlist" => 4, "🔙 Back" => 5}
         selection = @@prompt.select("Choose an option:", edit_options)
         case selection #gives choices for what to edit about playlist
         when 1 # add to playlist
             self.edit_existing_add_to_playlist(playlist)
         when 2 # remove track from playlist
             self.edit_existing_remove_track(playlist)
-        when 3 #delete playlist from db
+        when 3 #play tracks 
+            self.play_playlist(playlist)
+            self.select_playlist_to_edit(playlist)
+        when 4 #delete playlist from db
             self.delete_existing_playlist(playlist)
-        when 4 # go back
+        when 5 # go back
             self.edit_existing_playlist
         end
     end
@@ -336,6 +358,8 @@ class CLI
         end
     end
     
+    ## Search playlist helper methods
+
     def search_all_playlists # allows users to select from all playlists 
         choices = self.create_choices_hash(Playlist.all)
         action = @@prompt.select("Choose a playlist:", choices)
@@ -403,12 +427,16 @@ class CLI
     def playlist_options(playlist) #after selecting a playlist from a search method, ask to add or not
         system('clear')
         puts @@pastel.green(@@artii.asciify("#{playlist.name}"))
+        puts @@pastel.blue(@@artii.asciify("by: #{playlist.user.username}"))
         self.track_list(playlist)
         puts "\n"
-        choices = {"✅ Yes" => 1, "❌ No" => 2}
-        action = @@prompt.select("Add this playlist to your playlists?", choices)
+        choices = {"🎶 Play Tracks" => 1, "✅ Add to Library" => 2, "🔙 Back" => 3}
+        action = @@prompt.select("What to do:", choices)
         case action
         when 1
+            self.play_playlist(playlist)
+            self.playlist_options(playlist)
+        when 2
             # add to my playlists
             if @@current_user.has_playlist?(playlist)
                 puts "\nLooks like that playlist is already in your library 👌"
@@ -418,12 +446,12 @@ class CLI
             end
             sleep(2)
             self.search_playlists
-        when 2
+        when 3
             self.search_playlists
         end
     end
 
-    ## Formatting helper methods
+    ## Formatting and encapsulation helper methods
 
     def track_list(playlist) # encapsulated formatting for UI niceness
         puts "\n"
@@ -487,13 +515,17 @@ class CLI
         choices
     end
 
-    def play_playlist(playlist)
+    def play_playlist(playlist) #keeps playing playlists until you hit back, then returns you to the playlist options screen you were in before
+        system("clear")
+        puts @@pastel.green(@@artii.asciify("#{playlist.name}"))
+        puts @@pastel.blue(@@artii.asciify("by: #{playlist.user.username}"))
+        puts "\n"
         track_name_list = self.create_choices_hash(playlist.track_names)
         track_id_list = self.create_choices_hash(playlist.tracks)
         puts "\n"
         play_action = @@prompt.select("Select a song to play:", track_name_list)
         if play_action == track_name_list.size
-            self.my_library
+            return
         else
             track_url = RSpotify::Track.find(track_id_list.key(play_action)).external_urls["spotify"]
             Launchy.open(track_url)
