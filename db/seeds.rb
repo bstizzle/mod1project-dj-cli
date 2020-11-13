@@ -8,7 +8,7 @@ PlaylistTrack.destroy_all
 
 ben = User.create(username: 'ben', password: 'ben')
 brendan = User.create(username: 'brendan', password: 'brendan')
-mf_cloom = User.create(username: 'MF CLI', password: '123')
+mf_cloom = User.create(username: 'MF CLOOM', password: '123')
 
 p1 = Playlist.create(user_id: mf_cloom.id, name: "Hip Hop Classics", genre: "hip hop")
 p2 = Playlist.create(user_id: mf_cloom.id, name: "Pop Disco Funk", genre: "Pop")
@@ -36,6 +36,7 @@ panda = RSpotify::Track.search('panda', limit: 1, market: 'US').first
 drop_it = RSpotify::Track.search("drop it like it's hot", limit: 1, market: 'US').first
 ya_neck = RSpotify::Track.search("Break Ya Neck", limit: 1, market: 'US').first
 crossroads = RSpotify::Track.search("Tha Crossroads", limit: 1, market: 'US').first
+doom = RSpotify::Track.search("rip and tear", limit: 1, market: 'US').first
 
 #hip hop classics playlist
 PlaylistTrack.create(playlist_id: p1.id, track_id: cellz.id)
@@ -53,6 +54,7 @@ PlaylistTrack.create(playlist_id: p5.id, track_id: lazyeye.id)
 PlaylistTrack.create(playlist_id: p5.id, track_id: kidsbop.id)
 
 # Morning Workout Playlist
+PlaylistTrack.create(playlist_id: p4.id, track_id: doom.id)
 PlaylistTrack.create(playlist_id: p4.id, track_id: toxic.id)
 PlaylistTrack.create(playlist_id: p4.id, track_id: christmas.id)
 PlaylistTrack.create(playlist_id: p4.id, track_id: lazyeye.id)
