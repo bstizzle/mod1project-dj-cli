@@ -8,7 +8,7 @@ require 'launchy'
 class CLI 
 
     @@prompt = TTY::Prompt.new(active_color: :bright_green)
-    @@artii = Artii::Base.new :font => 'standard'
+    @@artii = Artii::Base.new :font => 'rounded'
     @@current_user = ''
     @@pastel = Pastel.new 
     @@spinner = TTY::Spinner.new("[:spinner] Loading...", format: :pulse_2)
@@ -293,10 +293,14 @@ class CLI
     
     def edit_existing_add_to_playlist(playlist) #add track helper method
         puts "\n"
-        puts "Enter the song name you wish to add:"
+        puts "Enter the song name you wish to add (hit enter to go back):"
         song_name = gets.chomp
-        playlist.add_track(spotify_by_trackname(song_name))
-        self.select_playlist_to_edit(playlist)
+        if song_name == ''
+            self.select_playlist_to_edit(playlist)
+        else
+            playlist.add_track(spotify_by_trackname(song_name))
+            self.select_playlist_to_edit(playlist)
+        end 
     end
 
     def edit_existing_remove_track(playlist) #remove track helper method
@@ -306,8 +310,15 @@ class CLI
             puts "\nSelect the track you want to remove:"
             track_hash = self.create_choices_hash(playlist.track_names)
             track_action = @@prompt.select("\nChoose a track to remove:", track_hash)
-            playlist.remove_track(RSpotify::Track.find(playlist.tracks[track_action-1]))
-            self.select_playlist_to_edit(playlist) #removes requested track from playlist and goes back to options menu
+            choices = {"✅ Yes" => 1, "❌ No" => 2}
+            action = @@prompt.select("\nAre you sure you want to delete this playlist?", choices)
+            case action 
+            when 1
+                playlist.remove_track(RSpotify::Track.find(playlist.tracks[track_action-1]))
+                self.select_playlist_to_edit(playlist) #removes requested track from playlist and goes back to options menu
+            when 2 
+                self.select_playlist_to_edit(playlist)
+            end 
         else
             puts "\nThere are no tracks in that playlist yet"
             self.spin_baby_spin
@@ -373,13 +384,13 @@ class CLI
 
     def search_by_genre # see list of all genres; see list of all playlists in selected genre
         genre_choices = self.create_choices_hash(Playlist.all_genres)
-        action_1 = @@prompt.select("Choose a genre:", genre_choices)
+        action_1 = @@prompt.select("\nChoose a genre:", genre_choices)
 
         if action_1 == genre_choices.size 
             self.search_playlists
         else
             playlist_choices = self.create_choices_hash(Playlist.find_by_genre(genre_choices.key(action_1)))
-            action_2 = @@prompt.select("Choose a playlist:", playlist_choices)
+            action_2 = @@prompt.select("\nChoose a playlist:", playlist_choices)
 
             if action_2 == playlist_choices.size 
                 self.search_playlists
@@ -482,7 +493,7 @@ class CLI
     end
 
     def spotify_by_artistname(artist_name) #encapsulates RSpotify search method for artists
-        artist_options = RSpotify::Artist.search('Arctic', limit: 10, market: 'US')
+        artist_options = RSpotify::Artist.search(artist_name, limit: 10, market: 'US')
         counter = 1
         choices = {}
         artist_options.select do |artist|

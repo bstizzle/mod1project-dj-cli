@@ -18,11 +18,7 @@ PlaylistTrack: playlist_id, track_id
 
 User has_many Playlists
 
-User has_many Reviews
-
 User has_many Tracks through Playlists
-
-User has_many Artists through Tracks
 
 Playlist belongs_to User (creator relationship)
 
@@ -34,10 +30,6 @@ Track has_many Playlists
 
 Track has_many Users through Playlists
 
-Review belongs_to User
-
-Review belongs_to Playlist
-
 # Relationship Chart
 
 User => PlaylistUser <= Playlist => PlaylistTrack <= Track
@@ -46,8 +38,6 @@ User => Playlist (user that created the playlist has a different association to 
 
 User => Playlist <= User (users know other users through shared playlists)
 #self referentials?
-
-User => Review <= Playlist (same structure as playlistUser, but not all Users will leave reviews for every Playlist they listen to)
 			 
 # User Stories
 
